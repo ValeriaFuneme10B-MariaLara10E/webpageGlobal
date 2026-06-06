@@ -1,0 +1,3529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Continuous Probability Distributions</title>
+
+  <!-- Plus Jakarta Sans — geometric clean font per design spec -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!--
+    Stage 1 — HTML Skeleton + CSS Base (redesigned)
+    Design system: Remote Loker spec applied to statistics tool
+    - Light theme: white / #FAFAFA
+    - Primary accent: #6366F1 (electric purple/indigo)
+    - Typography: Plus Jakarta Sans
+    - Pill buttons, card border-radius 16px, soft shadows
+    - All JS functionality preserved from original build
+  -->
+
+  <style>
+    /* ============================================================
+       DESIGN TOKENS — Remote Loker spec adapted for stats tool
+       ============================================================ */
+    :root {
+      /* Colors */
+      --bg-page:          #FAFAFA;
+      --bg-surface:       #FFFFFF;
+      --bg-surface-alt:   #F3F4F6;
+      --border:           #E5E7EB;
+      --border-focus:     #6366F1;
+
+      --accent:           #6366F1;   /* Electric purple — primary CTA, active tab */
+      --accent-soft:      #A78BFA;   /* Soft purple — secondary states */
+      --accent-bg:        #EEF2FF;   /* Very light purple — tinted backgrounds */
+      --success:          #059669;   /* Green — probability results */
+      --success-bg:       #ECFDF5;
+      --danger:           #DC2626;   /* Red — errors */
+      --danger-bg:        #FEF2F2;
+
+      --text-heading:     #111827;   /* Anthracite — headings */
+      --text-body:        #374151;   /* Dark grey — body text */
+      --text-muted:       #6B7280;   /* Medium grey — labels, placeholders */
+      --text-faint:       #9CA3AF;   /* Faint grey — disabled states */
+      --text-on-accent:   #FFFFFF;   /* White — text on purple buttons */
+
+      /* Canvas */
+      --canvas-bg:        #F9FAFB;
+      --curve-color:      #6366F1;
+      --shade-color:      rgba(99,102,241,0.18);
+
+      /* Geometry */
+      --radius-sm:        8px;
+      --radius-md:        12px;
+      --radius-lg:        16px;
+      --radius-xl:        24px;
+      --radius-pill:      9999px;
+
+      /* Shadows — soft diffuse per spec */
+      --shadow-sm:        0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md:        0 4px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+      --shadow-lg:        0 8px 30px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+
+      /* Typography */
+      --font-body:        'Plus Jakarta Sans', 'Inter', sans-serif;
+      --font-mono:        'Courier New', Courier, monospace;
+
+      /* Motion */
+      --transition:       0.18s ease;
+    }
+
+    /* ============================================================
+       RESET & BASE
+       ============================================================ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-body);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ============================================================
+       HEADER — institucional (C1)
+       Fondo oscuro slate+indigo para contraste académico formal
+       ============================================================ */
+    .header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 55%, #1e3a5f 100%);
+      border-bottom: 1px solid rgba(99,102,241,0.3);
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Blob decorativo — dot pattern faint */
+    .header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0);
+      background-size: 28px 28px;
+      pointer-events: none;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .logo-icon {
+      width: 38px;
+      height: 38px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 16px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 12px rgba(99,102,241,0.50);
+    }
+
+    .logo-text {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+    }
+
+    .logo-text span { color: #a5b4fc; }
+
+    /* Bloque de título institucional */
+    .header-institution-block {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .institution-badge {
+      display: inline-block;
+      background: rgba(99,102,241,0.18);
+      border: 1px solid rgba(165,180,252,0.3);
+      border-radius: var(--radius-pill);
+      color: #a5b4fc;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      padding: 2px 10px;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+
+    .header-main-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .header-main-sub {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    /* Tarjeta de metadatos (derecha) */
+    .header-meta-card {
+      background: rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .meta-row {
+      display: flex;
+      gap: 6px;
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+
+    .meta-key {
+      color: #94a3b8;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .meta-val {
+      color: #e2e8f0;
+      font-weight: 400;
+    }
+
+    /* Subtitle legacy — oculta en header institucional */
+    .header-subtitle { display: none; }
+
+    /* ============================================================
+       TAB NAVIGATION
+       ============================================================ */
+    .tabs-nav {
+      display: flex;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px;
+      gap: 0;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 14px 24px;
+      transition: color var(--transition), border-color var(--transition);
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover { color: var(--text-heading); }
+
+    .tab-btn.active {
+      border-bottom-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ============================================================
+       MAIN CONTENT CONTAINER
+       ============================================================ */
+    .main-content {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px 40px;
+    }
+
+    /* Mode panels */
+    .mode-panel { display: none; }
+    .mode-panel.active { display: block; }
+
+    /* Section heading */
+    .section-heading {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-heading::before {
+      content: '◆';
+      color: var(--accent);
+      font-size: 0.65rem;
+    }
+
+    /* ============================================================
+       SIMULATION LAYOUT — C8
+       ============================================================ */
+    .simulation-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    /* ============================================================
+       CONTROL PANEL — left column
+       ============================================================ */
+    .control-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: var(--shadow-md);
+    }
+
+    /* ============================================================
+       GRAPH PANEL — right column
+       ============================================================ */
+    .graph-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ============================================================
+       FORM CONTROLS — shared
+       ============================================================ */
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .control-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    /* Select dropdown */
+    .select-input {
+      appearance: none;
+      background-color: var(--bg-page);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-heading);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 10px 36px 10px 12px;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      width: 100%;
+    }
+
+    .select-input:hover { border-color: var(--accent-soft); }
+    .select-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+      outline: none;
+    }
+
+    /* Number input */
+    .num-input {
+      background: var(--bg-page);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-heading);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 9px 12px;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      width: 100%;
+    }
+
+    .num-input:hover { border-color: var(--accent-soft); }
+    .num-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+      outline: none;
+    }
+
+    .num-input::placeholder { color: var(--text-faint); }
+
+    /* Param label with math notation */
+    .param-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .math-tag {
+      display: inline-block;
+      background: var(--accent-bg);
+      color: var(--accent);
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 1px 5px;
+      margin-left: 4px;
+    }
+
+    /* Panel title */
+    .panel-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding-bottom: 10px;
+      border-bottom: 1.5px solid var(--accent-bg);
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 2px 0;
+    }
+
+    /* Small helper note */
+    .helper-note {
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      line-height: 1.5;
+    }
+
+    /* ============================================================
+       DISTRIBUTION PARAMETER PANELS
+       ============================================================ */
+    .params-panels {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .dist-params {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .dist-params.active { display: flex; }
+
+    /* ============================================================
+       PROBABILITY SECTION
+       ============================================================ */
+    .prob-section {
+      background: var(--accent-bg);
+      border: 1.5px solid rgba(99,102,241,0.2);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .prob-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .limits-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .limits-grid.single { grid-template-columns: 1fr; }
+
+    /* ============================================================
+       PRIMARY BUTTON — pill shape per spec
+       ============================================================ */
+    .btn-primary {
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius-pill);
+      color: var(--text-on-accent);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      padding: 11px 20px;
+      transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+      width: 100%;
+      box-shadow: 0 2px 8px rgba(99,102,241,0.30);
+    }
+
+    .btn-primary:hover {
+      background: #4F46E5;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(99,102,241,0.40);
+    }
+
+    .btn-primary:active { transform: translateY(0); }
+
+    /* ============================================================
+       CANVAS CONTAINER
+       ============================================================ */
+    .canvas-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+
+    .canvas-header {
+      padding: 14px 20px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .canvas-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 340px;
+    }
+
+    /* Placeholder when no chart yet */
+    .canvas-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 320px;
+      gap: 10px;
+      text-align: center;
+    }
+
+    .placeholder-icon {
+      font-size: 2.8rem;
+      opacity: 0.25;
+    }
+
+    .placeholder-text {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .placeholder-sub {
+      font-size: 0.75rem;
+      color: var(--text-faint);
+    }
+
+    /* ============================================================
+       RESULT PANEL
+       ============================================================ */
+    .result-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .result-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .result-expression {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .result-value {
+      font-family: var(--font-mono);
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--success);
+    }
+
+    .result-empty {
+      font-size: 0.875rem;
+      color: var(--text-faint);
+      font-style: italic;
+    }
+
+    /* Result badge */
+    .result-badge {
+      background: var(--success-bg);
+      border: 1px solid rgba(5,150,105,0.2);
+      border-radius: var(--radius-pill);
+      color: var(--success);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      letter-spacing: 0.05em;
+      display: none;
+    }
+
+    .result-badge.visible { display: inline-block; }
+
+    /* ============================================================
+       DATA MODELING LAYOUT — C9
+       ============================================================ */
+    /* Acción 1 — grid de 3 columnas:
+       col-izq (280px): upload + paste + stats + selector de modelo
+       col-centro (1fr): canvas histograma
+       col-der (280px): parámetros + interpretación + C10 + calculadora */
+    .data-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr 280px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .data-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: var(--shadow-md);
+    }
+
+    /* Panel derecho — resultados/diagnósticos */
+    .results-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: var(--shadow-md);
+    }
+
+    /* Botón acordeón paste data */
+    .paste-toggle {
+      background: none;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 7px 12px;
+      text-align: left;
+      transition: border-color var(--transition), color var(--transition);
+      width: 100%;
+    }
+
+    .paste-toggle:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      padding: 12px 16px;
+      text-align: center;
+      transition: border-color var(--transition), background var(--transition);
+    }
+
+    .upload-zone:hover {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    .upload-icon { font-size: 2rem; opacity: 0.4; margin-bottom: 8px; }
+
+    .upload-text {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      font-weight: 500;
+    }
+
+    .upload-text strong { color: var(--accent); }
+
+    #inputCSV { display: none; }
+
+    /* Stats panel */
+    .stats-panel {
+      background: var(--bg-surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: none;
+    }
+
+    .stats-panel.visible { display: block; }
+
+    .stats-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.82rem;
+      flex-wrap: wrap;
+    }
+
+    .stat-row:last-child { border-bottom: none; }
+    .stat-name {
+      color: var(--text-muted);
+      font-weight: 500;
+      flex: 1 1 auto;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .stat-value {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+
+    /* Estimated params panel */
+    .params-estimated {
+      background: var(--success-bg);
+      border: 1.5px solid rgba(5,150,105,0.2);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: none;
+    }
+
+    .params-estimated.visible { display: block; }
+
+    .params-est-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--success);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    /* Interpretation block — debajo del canvas en col-centro */
+    .interpretation-block {
+      background: var(--accent-bg);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      padding: 12px 16px;
+      color: var(--text-body);
+      display: none;
+      width: 100%;
+    }
+
+    .interpretation-block.visible { display: block; }
+
+    /* Visualization panel */
+    .viz-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+
+    /* ============================================================
+       PROBABILITY PANEL — C9 (cálculo desde modelo ajustado)
+       ============================================================ */
+    .c9-prob-panel {
+      background: var(--accent-bg);
+      border: 1.5px solid rgba(99,102,241,0.22);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .c9-prob-panel.visible { display: flex; }
+
+    .c9-prob-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* Resultado automático μ±σ / μ±2σ */
+    .auto-prob-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+    }
+
+    .auto-prob-title {
+      font-size: 0.66rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    /* Inputs de probabilidad manual C9 */
+    .c9-prob-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .c9-prob-row.single { grid-template-columns: 1fr; }
+
+    /* Resultado numérico C9 */
+    .c9-result-box {
+      background: var(--success-bg);
+      border: 1px solid rgba(5,150,105,0.2);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .c9-result-box.visible { display: flex; }
+
+    .c9-result-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-family: var(--font-mono);
+      flex: 1 1 auto;
+    }
+
+    .c9-result-value {
+      font-family: var(--font-mono);
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--success);
+      white-space: nowrap;
+    }
+
+    /* Botón secundario pill — outline style */
+    .btn-secondary {
+      background: var(--bg-surface);
+      border: 1.5px solid var(--accent);
+      border-radius: var(--radius-pill);
+      color: var(--accent);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 8px 16px;
+      transition: background var(--transition), color var(--transition);
+      width: 100%;
+    }
+
+    .btn-secondary:hover {
+      background: var(--accent);
+      color: var(--text-on-accent);
+    }
+
+    /* ============================================================
+       ERROR MESSAGE
+       ============================================================ */
+    .error-msg {
+      background: var(--danger-bg);
+      border: 1px solid rgba(220,38,38,0.2);
+      border-radius: var(--radius-sm);
+      color: var(--danger);
+      display: none;
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 9px 13px;
+    }
+
+    .error-msg.visible { display: block; }
+
+    /* ============================================================
+       AI DEVELOPMENT RECORD — C5: fondo oscuro prominente
+       ============================================================ */
+    .ai-record-section {
+      margin: 36px auto;
+      max-width: 1280px;
+      padding: 0 40px;
+    }
+
+    .ai-dark-card {
+      background: #0f172a;
+      border: 1px solid rgba(99,102,241,0.25);
+      border-radius: var(--radius-xl);
+      padding: 28px 36px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    }
+
+    .ai-record-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .ai-badge {
+      background: rgba(99,102,241,0.18);
+      border: 1px solid rgba(165,180,252,0.3);
+      border-radius: var(--radius-pill);
+      color: #a5b4fc;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 3px 12px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .ai-record-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+    }
+
+    .ai-record-desc {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      margin-bottom: 18px;
+      line-height: 1.7;
+      max-width: 820px;
+    }
+
+    .ai-links-list {
+      display: block;
+    }
+
+    .ai-link-item {
+      display: flex;
+      align-items: center;
+    }
+
+    .ai-link {
+      color: #c7d2fe;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      transition: color var(--transition);
+    }
+
+    .ai-link:hover { color: #ffffff; }
+    .ai-link-placeholder { color: #64748b; font-style: italic; font-size: 0.82rem; }
+
+    /* ============================================================
+       C2 — Textarea pegar datos (paste data)
+       ============================================================ */
+    .paste-textarea {
+      background: var(--bg-page);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-heading);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.5;
+      padding: 9px 12px;
+      resize: vertical;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      width: 100%;
+    }
+
+    .paste-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+      outline: none;
+    }
+
+    .paste-textarea::placeholder { color: var(--text-faint); }
+
+    /* ============================================================
+       C3 — CSV upload en modo Simulación (autopoblar parámetros)
+       ============================================================ */
+    .csv-sim-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-page);
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      padding: 9px 12px;
+      transition: border-color var(--transition), background var(--transition);
+    }
+
+    .csv-sim-label:hover {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
+
+    .csv-sim-icon { font-size: 1rem; }
+
+    /* ============================================================
+       C4 — Panel C10 Diagnostics con notación matemática
+       ============================================================ */
+    .c10-diagnostics-box {
+      background: linear-gradient(135deg, #eef2ff 0%, #f0fdf4 100%);
+      border: 1.5px solid rgba(99,102,241,0.2);
+      border-radius: var(--radius-md);
+      padding: 14px;
+    }
+
+    .c10-diag-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .c10-diag-badge {
+      background: var(--accent);
+      border-radius: var(--radius-pill);
+      color: white;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      padding: 2px 8px;
+      text-transform: uppercase;
+    }
+
+    .c10-diag-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(99,102,241,0.12);
+    }
+
+    .c10-diag-row:last-child { border-bottom: none; }
+
+    .c10-diag-row-tail {
+      background: rgba(5,150,105,0.05);
+      margin: 4px -2px -2px;
+      padding: 6px 2px;
+      border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    }
+
+    .c10-diag-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      line-height: 1.4;
+      flex: 1;
+    }
+
+    .c10-diag-value {
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .c10-diag-tail { color: var(--success); }
+
+    /* ============================================================
+       FOOTER
+       ============================================================ */
+    .footer {
+      border-top: 1px solid var(--border);
+      color: var(--text-faint);
+      font-size: 0.78rem;
+      padding: 18px 40px;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    /* ============================================================
+       PIECEWISE AREA INDICATOR
+       ============================================================ */
+    .area-indicator {
+      font-size: 0.75rem;
+      color: var(--text-faint);
+      margin-top: 2px;
+    }
+
+    .area-indicator .area-val {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* Two-col grid for piecewise inputs */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    /* Tramo label */
+    .tramo-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--accent-soft);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    /* ============================================================
+       RESPONSIVE — below 900px
+       ============================================================ */
+    @media (max-width: 900px) {
+      .simulation-layout,
+      .data-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .main-content { padding: 18px 20px; }
+      .header { padding: 16px 20px; flex-direction: column; align-items: flex-start; gap: 12px; }
+      .header-left { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .header-meta-card { width: 100%; }
+      .tabs-nav { padding: 0 20px; }
+      .ai-record-section { margin: 20px; padding: 0 20px; }
+      .footer { padding: 16px 20px; }
+      .header-main-title { font-size: 1rem; }
+    }
+
+    /* En pantallas medianas (900–1200px) reducir a 2 col en C9 */
+    @media (max-width: 1200px) and (min-width: 901px) {
+      .data-layout {
+        grid-template-columns: 260px 1fr;
+        grid-template-rows: auto auto;
+      }
+      /* Panel de resultados ocupa el ancho completo en la segunda fila */
+      .results-panel {
+        grid-column: 1 / -1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ============================================================
+       HEADER — institucional con metadatos académicos (C1 — de gemini3)
+       ============================================================ -->
+  <header class="header header-institutional">
+    <div class="header-left">
+      <div class="header-logo">
+        <div class="logo-icon">∫</div>
+        <div>
+          <div class="logo-text">Prob<span>Dist</span></div>
+        </div>
+      </div>
+      <div class="header-institution-block">
+        <span class="institution-badge">San Bartolomé &amp; La Merced · Grade 10</span>
+        <h1 class="header-main-title">Continuous Probability Modeling System</h1>
+        <p class="header-main-sub">Computational Tool for Empirical Data Fitting &amp; PDF Simulation</p>
+      </div>
+    </div>
+    <div class="header-meta-card">
+      <div class="meta-row"><span class="meta-key">Course:</span><span class="meta-val">Global Economics</span></div>
+      <div class="meta-row"><span class="meta-key">Assessment:</span><span class="meta-val">Third Term · Learning Evidence 4</span></div>
+      <div class="meta-row"><span class="meta-key">Teacher:</span><span class="meta-val">Nicolás López Cuéllar</span></div>
+      <div class="meta-row"><span class="meta-key">Year:</span><span class="meta-val">Academic Year 2025–2026</span></div>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       TAB NAVIGATION
+       ============================================================ -->
+  <nav class="tabs-nav" role="tablist" aria-label="Application modes">
+    <button
+      class="tab-btn active"
+      id="tab-simulacion"
+      role="tab"
+      aria-selected="true"
+      aria-controls="panel-simulacion"
+      onclick="cambiarTab('simulacion')"
+    >
+      📊 Simulation (C8)
+    </button>
+    <button
+      class="tab-btn"
+      id="tab-modelado"
+      role="tab"
+      aria-selected="false"
+      aria-controls="panel-modelado"
+      onclick="cambiarTab('modelado')"
+    >
+      📂 Data Modeling (C9)
+    </button>
+  </nav>
+
+  <!-- ============================================================
+       MAIN CONTENT
+       ============================================================ -->
+  <main class="main-content">
+
+    <!-- ======================================================
+         SIMULATION MODE — C8
+         ====================================================== -->
+    <section
+      class="mode-panel active"
+      id="panel-simulacion"
+      role="tabpanel"
+      aria-labelledby="tab-simulacion"
+    >
+      <div class="section-heading">Interactive PDF Grapher — Simulation Mode</div>
+
+      <div class="simulation-layout">
+
+        <!-- Left column: controls -->
+        <aside class="control-panel">
+
+          <!-- Distribution selector -->
+          <div class="control-group">
+            <label class="control-label" for="selectorDistribucion">Distribution</label>
+            <select
+              class="select-input"
+              id="selectorDistribucion"
+              onchange="cambiarDistribucion(this.value)"
+              aria-label="Select distribution type"
+            >
+              <option value="uniforme">Uniform</option>
+              <option value="triangular">Triangular</option>
+              <option value="lineal">Linear (increasing / decreasing)</option>
+              <option value="porpartes">Piecewise</option>
+              <option value="normal">Normal (Gaussian)</option>
+            </select>
+          </div>
+
+          <!-- C3: CSV upload en modo simulación para autopoblar parámetros -->
+          <div class="control-group">
+            <label class="control-label">Auto-fill from CSV (optional)</label>
+            <label class="csv-sim-label" for="csvSimInput">
+              <span class="csv-sim-icon">📁</span>
+              <span id="csvSimText">Upload CSV to auto-fill parameters</span>
+            </label>
+            <input type="file" id="csvSimInput" accept=".csv"
+              style="display:none;" onchange="cargarCSVSimulacion(this)" />
+            <p class="helper-note">Uploads DS1, DS2 or DS3 to prefill the selected distribution.</p>
+          </div>
+
+          <!-- ================================================
+               PARAMETER PANELS — one per distribution
+               Logic added in Stage 2
+               ================================================ -->
+          <div class="params-panels">
+
+            <!-- UNIFORM: params a, b -->
+            <div class="dist-params active" id="params-uniforme">
+              <div class="panel-title">Uniform U(a, b)</div>
+
+              <div class="control-group">
+                <label class="param-label" for="unif-a">
+                  Lower bound <span class="math-tag">a</span>
+                </label>
+                <input class="num-input" id="unif-a" type="number" value="0" step="0.1" placeholder="e.g. 0" />
+              </div>
+
+              <div class="control-group">
+                <label class="param-label" for="unif-b">
+                  Upper bound <span class="math-tag">b</span>
+                </label>
+                <input class="num-input" id="unif-b" type="number" value="1" step="0.1" placeholder="e.g. 1" />
+              </div>
+            </div>
+
+            <!-- TRIANGULAR: params a, b, c -->
+            <div class="dist-params" id="params-triangular">
+              <div class="panel-title">Triangular T(a, b, c)</div>
+
+              <div class="control-group">
+                <label class="param-label" for="tri-a">
+                  Lower bound <span class="math-tag">a</span>
+                </label>
+                <input class="num-input" id="tri-a" type="number" value="0" step="0.1" placeholder="e.g. 0" />
+              </div>
+
+              <div class="control-group">
+                <label class="param-label" for="tri-b">
+                  Upper bound <span class="math-tag">b</span>
+                </label>
+                <input class="num-input" id="tri-b" type="number" value="10" step="0.1" placeholder="e.g. 10" />
+              </div>
+
+              <div class="control-group">
+                <label class="param-label" for="tri-c">
+                  Mode <span class="math-tag">c</span>
+                  <span class="helper-note"> (a ≤ c ≤ b)</span>
+                </label>
+                <input class="num-input" id="tri-c" type="number" value="5" step="0.1" placeholder="e.g. 5" />
+              </div>
+            </div>
+
+            <!-- LINEAR: params a, b, direction -->
+            <div class="dist-params" id="params-lineal">
+              <div class="panel-title">Linear L(a, b)</div>
+
+              <div class="control-group">
+                <label class="param-label" for="lin-a">
+                  Lower bound <span class="math-tag">a</span>
+                </label>
+                <input class="num-input" id="lin-a" type="number" value="0" step="0.1" placeholder="e.g. 0" />
+              </div>
+
+              <div class="control-group">
+                <label class="param-label" for="lin-b">
+                  Upper bound <span class="math-tag">b</span>
+                </label>
+                <input class="num-input" id="lin-b" type="number" value="4" step="0.1" placeholder="e.g. 4" />
+              </div>
+
+              <div class="control-group">
+                <label class="param-label" for="lin-direccion">Direction</label>
+                <select class="select-input" id="lin-direccion">
+                  <option value="creciente">Increasing ↗</option>
+                  <option value="decreciente">Decreasing ↘</option>
+                </select>
+              </div>
+
+              <p class="helper-note">
+                The linear PDF is automatically normalized so the total area equals 1.
+              </p>
+            </div>
+
+            <!-- PIECEWISE: 3 intervals with height per piece -->
+            <div class="dist-params" id="params-porpartes">
+              <div class="panel-title">Piecewise</div>
+
+              <!-- Piece 1 -->
+              <div class="tramo-label">Piece 1</div>
+              <div class="two-col">
+                <div class="control-group">
+                  <label class="param-label" for="pp-a1">Start</label>
+                  <input class="num-input" id="pp-a1" type="number" value="0" step="0.1" />
+                </div>
+                <div class="control-group">
+                  <label class="param-label" for="pp-b1">End</label>
+                  <input class="num-input" id="pp-b1" type="number" value="2" step="0.1" />
+                </div>
+              </div>
+              <div class="control-group">
+                <label class="param-label" for="pp-h1">Height f(x)</label>
+                <input class="num-input" id="pp-h1" type="number" value="0.10" step="0.01" />
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Piece 2 -->
+              <div class="tramo-label">Piece 2</div>
+              <div class="two-col">
+                <div class="control-group">
+                  <label class="param-label" for="pp-a2">Start</label>
+                  <input class="num-input" id="pp-a2" type="number" value="2" step="0.1" />
+                </div>
+                <div class="control-group">
+                  <label class="param-label" for="pp-b2">End</label>
+                  <input class="num-input" id="pp-b2" type="number" value="5" step="0.1" />
+                </div>
+              </div>
+              <div class="control-group">
+                <label class="param-label" for="pp-h2">Height f(x)</label>
+                <input class="num-input" id="pp-h2" type="number" value="0.20" step="0.01" />
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Piece 3 -->
+              <div class="tramo-label">Piece 3</div>
+              <div class="two-col">
+                <div class="control-group">
+                  <label class="param-label" for="pp-a3">Start</label>
+                  <input class="num-input" id="pp-a3" type="number" value="5" step="0.1" />
+                </div>
+                <div class="control-group">
+                  <label class="param-label" for="pp-b3">End</label>
+                  <input class="num-input" id="pp-b3" type="number" value="8" step="0.1" />
+                </div>
+              </div>
+              <div class="control-group">
+                <label class="param-label" for="pp-h3">Height f(x)</label>
+                <input class="num-input" id="pp-h3" type="number" value="0.15" step="0.01" />
+              </div>
+
+              <!-- Total area indicator -->
+              <div class="area-indicator">
+                Total area: <span class="area-val" id="pp-area-valor">—</span>
+                <span style="color:var(--text-faint);"> (must equal 1.00)</span>
+              </div>
+            </div>
+
+            <!-- NORMAL: params μ, σ -->
+            <div class="dist-params" id="params-normal">
+              <div class="panel-title">Normal N(μ, σ)</div>
+
+              <div class="control-group">
+                <label class="param-label" for="norm-mu">
+                  Mean <span class="math-tag">μ</span>
+                </label>
+                <input class="num-input" id="norm-mu" type="number" value="0" step="0.1" placeholder="e.g. 0" />
+              </div>
+
+              <div class="control-group">
+                <label class="param-label" for="norm-sigma">
+                  Std. deviation <span class="math-tag">σ</span>
+                  <span class="helper-note"> (σ &gt; 0)</span>
+                </label>
+                <input class="num-input" id="norm-sigma" type="number" value="1" step="0.1" min="0.01" placeholder="e.g. 1" />
+              </div>
+            </div>
+
+          </div><!-- /params-panels -->
+
+          <!-- Probability calculation section -->
+          <div class="prob-section">
+            <div class="prob-title">Calculate Probability</div>
+
+            <div class="control-group">
+              <label class="control-label" for="tipoProbabilidad">Type</label>
+              <select
+                class="select-input"
+                id="tipoProbabilidad"
+                onchange="actualizarInputsLimites(this.value)"
+              >
+                <option value="menor">P(X &lt; x) — below a point</option>
+                <option value="mayor">P(X &gt; x) — above a point</option>
+                <option value="entre">P(x₁ &lt; X &lt; x₂) — between two points</option>
+              </select>
+            </div>
+
+            <div class="limits-grid single" id="contenedorLimites">
+              <div class="control-group">
+                <label class="param-label" for="limiteX1" id="etiquetaX1">Value x</label>
+                <input class="num-input" id="limiteX1" type="number" step="0.1" placeholder="x" />
+              </div>
+              <div class="control-group" id="grupoX2" style="display:none;">
+                <label class="param-label" for="limiteX2">Value x₂</label>
+                <input class="num-input" id="limiteX2" type="number" step="0.1" placeholder="x₂" />
+              </div>
+            </div>
+
+            <button class="btn-primary" onclick="calcularProbabilidad()">
+              Calculate &amp; Graph
+            </button>
+          </div>
+
+          <!-- Error message C8 -->
+          <div class="error-msg" id="errorSimulacion">
+            ⚠️ <span id="textoErrorSimulacion">Invalid parameters.</span>
+          </div>
+
+        </aside><!-- /control-panel -->
+
+        <!-- Right column: graph + result -->
+        <div class="graph-panel">
+
+          <div class="canvas-container">
+            <div class="canvas-header">
+              <div class="canvas-title">PDF Graph</div>
+            </div>
+            <div class="canvas-placeholder" id="placeholderSimulacion">
+              <div class="placeholder-icon">📈</div>
+              <div class="placeholder-text">The graph will appear here</div>
+              <div class="placeholder-sub">Select a distribution and press "Calculate &amp; Graph"</div>
+            </div>
+            <canvas id="canvasSimulacion" width="800" height="340" style="display:none;"></canvas>
+          </div>
+
+          <div class="result-panel">
+            <div>
+              <div class="result-label">Calculated Probability</div>
+              <div class="result-expression" id="expresionProbabilidad">—</div>
+            </div>
+            <div style="margin-left:auto; display:flex; align-items:center; gap:12px;">
+              <span class="result-badge" id="resultBadge">RESULT</span>
+              <div id="valorProbabilidad" class="result-empty">press calculate</div>
+            </div>
+          </div>
+
+        </div><!-- /graph-panel -->
+      </div><!-- /simulation-layout -->
+    </section>
+
+    <!-- ======================================================
+         DATA MODELING MODE — C9
+         ====================================================== -->
+    <section
+      class="mode-panel"
+      id="panel-modelado"
+      role="tabpanel"
+      aria-labelledby="tab-modelado"
+    >
+      <div class="section-heading">Distribution Fitting — Data Modeling Mode</div>
+
+      <div class="data-layout">
+
+        <!-- COLUMNA IZQUIERDA: ingesta de datos + estadísticas + selector de modelo -->
+        <aside class="data-panel">
+
+          <div class="control-group">
+            <div class="control-label">Upload Data (CSV)</div>
+            <div
+              class="upload-zone"
+              id="zonaCarga"
+              onclick="document.getElementById('inputCSV').click()"
+              ondragover="event.preventDefault(); this.style.borderColor='var(--accent)'; this.style.background='var(--accent-bg)'"
+              ondragleave="this.style.borderColor='var(--border)'; this.style.background=''"
+              ondrop="manejarDrop(event)"
+              role="button" tabindex="0" aria-label="CSV file upload zone"
+            >
+              <div class="upload-icon">📁</div>
+              <div class="upload-text">
+                Click or drag a CSV file here<br/>
+                <strong>Dataset 1, 2 or 3</strong>
+              </div>
+            </div>
+            <input type="file" id="inputCSV" accept=".csv" onchange="cargarCSV(this)" />
+          </div>
+
+          <!-- Acordeón paste data -->
+          <div class="control-group">
+            <button class="paste-toggle" onclick="togglePasteArea()" id="pasteToggleBtn"
+              aria-expanded="false" aria-controls="pasteAreaWrapper">
+              <span id="pasteToggleIcon">▶</span> Or paste data manually
+            </button>
+            <div id="pasteAreaWrapper" style="display:none; margin-top:8px;">
+              <textarea id="pasteDataArea" class="paste-textarea" rows="4"
+                placeholder="e.g. 24.8, 35.1, 40.2, 52.7, ..."></textarea>
+              <button class="btn-secondary" onclick="procesarDataPegada()" style="margin-top:6px;">
+                Analyze Pasted Data
+              </button>
+            </div>
+          </div>
+
+          <!-- Dataset statistics -->
+          <div class="stats-panel" id="panelEstadisticas">
+            <div class="stats-title">Dataset Statistics</div>
+            <div class="stat-row"><span class="stat-name">N (observations)</span><span class="stat-value" id="stat-n">—</span></div>
+            <div class="stat-row"><span class="stat-name">Minimum</span><span class="stat-value" id="stat-min">—</span></div>
+            <div class="stat-row"><span class="stat-name">Maximum</span><span class="stat-value" id="stat-max">—</span></div>
+            <div class="stat-row"><span class="stat-name">Mean (μ)</span><span class="stat-value" id="stat-media">—</span></div>
+            <div class="stat-row"><span class="stat-name">Std. deviation (σ)</span><span class="stat-value" id="stat-sigma">—</span></div>
+          </div>
+
+          <!-- Model selector -->
+          <div class="control-group">
+            <label class="control-label" for="selectorModelo">Model to Fit</label>
+            <select class="select-input" id="selectorModelo" onchange="ajustarModelo(this.value)">
+              <option value="">— Select model —</option>
+              <option value="uniforme">Uniform</option>
+              <option value="triangular">Triangular</option>
+              <option value="lineal">Linear</option>
+              <option value="uniforme-partes">Piecewise Uniform</option>
+              <option value="normal">Normal</option>
+            </select>
+          </div>
+
+          <!-- Error message C9 -->
+          <div class="error-msg" id="errorModelado">
+            ⚠️ <span id="textoErrorModelado">Error processing the data.</span>
+          </div>
+
+        </aside>
+
+        <!-- COLUMNA CENTRAL: histograma + PDF ajustada + interpretación -->
+        <div class="viz-panel">
+          <div class="canvas-container">
+            <div class="canvas-header">
+              <div class="canvas-title">Histogram + Fitted PDF</div>
+            </div>
+            <div class="canvas-placeholder" id="placeholderModelado">
+              <div class="placeholder-icon">📂</div>
+              <div class="placeholder-text">Upload a CSV file to begin</div>
+              <div class="placeholder-sub">Accepts datasets 1, 2 and 3 provided by the teacher</div>
+            </div>
+            <canvas id="canvasModelado" width="800" height="420" style="display:none;"></canvas>
+          </div>
+          <!-- Interpretación del ajuste — debajo del gráfico -->
+          <div class="interpretation-block" id="bloqueInterpretacion"></div>
+        </div>
+
+        <!-- COLUMNA DERECHA: parámetros + C10 diagnostics + calculadora -->
+        <div class="results-panel">
+
+          <!-- Placeholder inicial -->
+          <div class="canvas-placeholder" id="resultsPlaceholder" style="height:180px;">
+            <div class="placeholder-icon">📊</div>
+            <div class="placeholder-text">Results appear here after selecting a model.</div>
+          </div>
+
+          <!-- Parámetros estimados -->
+          <div class="params-estimated" id="panelParamsEstimados">
+            <div class="params-est-title">Estimated Parameters</div>
+            <div id="contenidoParamsEstimados"></div>
+          </div>
+
+          <!-- Panel de probabilidad C9 + C10 diagnostics -->
+          <div class="c9-prob-panel" id="panelProbC9">
+            <div class="c9-prob-title">&#128202; Probability from Fitted Model</div>
+
+            <!-- C10 Diagnostics -->
+            <div class="auto-prob-box c10-diagnostics-box" id="autoProbs">
+              <div class="c10-diag-header">
+                <span class="c10-diag-badge">C10 Required</span>
+                <span class="auto-prob-title">Mandatory Diagnostics</span>
+              </div>
+              <div class="c10-diag-row">
+                <p class="c10-diag-label">P(μ − σ &lt; X &lt; μ + σ):</p>
+                <p class="c10-diag-value" id="c9-p1s">N/A</p>
+              </div>
+              <div class="c10-diag-row">
+                <p class="c10-diag-label">P(μ − 2σ &lt; X &lt; μ + 2σ):</p>
+                <p class="c10-diag-value" id="c9-p2s">N/A</p>
+              </div>
+              <div class="c10-diag-row c10-diag-row-tail">
+                <p class="c10-diag-label">P(X &lt; μ−2σ <strong>or</strong> X &gt; μ+2σ):</p>
+                <p class="c10-diag-value c10-diag-tail" id="c9-ptails">N/A</p>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Calculadora manual -->
+            <div class="control-group">
+              <label class="control-label" for="c9-tipoprob">Probability Type</label>
+              <select class="select-input" id="c9-tipoprob" onchange="actualizarInputsC9(this.value)">
+                <option value="menor">P(X &lt; x) — below a point</option>
+                <option value="mayor">P(X &gt; x) — above a point</option>
+                <option value="entre">P(x&#8321; &lt; X &lt; x&#8322;) — between</option>
+              </select>
+            </div>
+
+            <div class="c9-prob-row single" id="c9-limits-container">
+              <div class="control-group">
+                <label class="param-label" id="c9-label-x1">Value x</label>
+                <input class="num-input" id="c9-x1" type="number" step="any" placeholder="x" />
+              </div>
+              <div class="control-group" id="c9-grupo-x2" style="display:none;">
+                <label class="param-label">Value x&#8322;</label>
+                <input class="num-input" id="c9-x2" type="number" step="any" placeholder="x&#8322;" />
+              </div>
+            </div>
+
+            <button class="btn-secondary" onclick="calcularProbC9()">
+              Calculate from Fitted Model
+            </button>
+
+            <div class="c9-result-box" id="c9-result-box">
+              <span class="c9-result-label" id="c9-result-expr">—</span>
+              <span class="c9-result-value" id="c9-result-val">—</span>
+            </div>
+
+            <div class="error-msg" id="errorProbC9" style="display:none;">
+              &#9888;&#65039; <span id="textoProbC9">Error.</span>
+            </div>
+          </div>
+
+        </div><!-- /results-panel -->
+
+      </div><!-- /data-layout -->
+    </section>
+
+  </main>
+
+  <!-- ============================================================
+       AI DEVELOPMENT RECORD — sección oscura prominente (C5)
+       Visible obligatoria según criterios C8–C9.
+       Reemplazar los href="#" con URLs reales antes de publicar.
+       ============================================================ -->
+  <section class="ai-record-section" id="ai-development-record" aria-label="AI development record">
+    <div class="ai-dark-card">
+      <div class="ai-record-header">
+        <span class="ai-badge">C8 · C9 Required</span>
+        <h2 class="ai-record-title">AI Engineering &amp; Conversational Audit Log</h2>
+      </div>
+      <p class="ai-record-desc">
+        In compliance with the evaluation checklist for C8, C9, and C10, this permanent section
+        hosts the required hyperlinks documenting verified prompt workflows, testing routines,
+        and code modifications used during the AI-assisted development of this webpage.
+      </p>
+      <div class="ai-links-list">
+        <div class="ai-link-item">
+          <!-- REPLACE href="#" with the real Claude conversation URL before deploying -->
+          <a class="ai-link" href="#" id="ai-link-1" target="_blank" rel="noopener noreferrer">
+            AI Engineering &amp; Conversational Audit Log
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FOOTER
+       ============================================================ -->
+  <footer class="footer">
+    Continuous Probability Modeling System · C8 + C9 + C10 · Grade 10 · San Bartolomé &amp; La Merced &nbsp;·&nbsp;
+    Distributions: Uniform · Triangular · Linear · Piecewise · Normal
+  </footer>
+
+  <!-- ============================================================
+       JAVASCRIPT — Stages 2 + 3
+       Stage 2: Distribution engine — PDF + CDF for all 5 distributions
+       Stage 3: Canvas rendering — PDF curve + probability shading
+       ============================================================ -->
+  <script>
+
+    // ============================================================
+    // STAGE 1 — UI: Tab switching + distribution panel switching
+    // (preserved from Stage 1, no changes)
+    // ============================================================
+
+    function cambiarTab(modo) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      });
+      document.querySelectorAll('.mode-panel').forEach(panel => {
+        panel.classList.remove('active');
+      });
+      document.getElementById('tab-' + modo).classList.add('active');
+      document.getElementById('tab-' + modo).setAttribute('aria-selected', 'true');
+      document.getElementById('panel-' + modo).classList.add('active');
+    }
+
+    function cambiarDistribucion(distribucion) {
+      document.querySelectorAll('.dist-params').forEach(panel => {
+        panel.classList.remove('active');
+      });
+      const target = document.getElementById('params-' + distribucion);
+      if (target) target.classList.add('active');
+
+      // Actualizar indicador de área al cambiar a distribución por partes
+      if (distribucion === 'porpartes') actualizarAreaPorPartes();
+      limpiarResultado();
+    }
+
+    function actualizarInputsLimites(tipo) {
+      const grupoX2    = document.getElementById('grupoX2');
+      const etiqueta   = document.getElementById('etiquetaX1');
+      const contenedor = document.getElementById('contenedorLimites');
+
+      if (tipo === 'entre') {
+        grupoX2.style.display = 'flex';
+        etiqueta.textContent  = 'Value x₁';
+        contenedor.classList.remove('single');
+      } else {
+        grupoX2.style.display = 'none';
+        etiqueta.textContent  = 'Value x';
+        contenedor.classList.add('single');
+      }
+    }
+
+    function limpiarResultado() {
+      const valEl = document.getElementById('valorProbabilidad');
+      valEl.textContent = 'press calculate';
+      valEl.className   = 'result-empty';
+      document.getElementById('expresionProbabilidad').textContent = '—';
+      document.getElementById('resultBadge').classList.remove('visible');
+    }
+
+    // ============================================================
+    // STAGE 2 — DISTRIBUTION ENGINE
+    // Funciones matemáticas para las 5 distribuciones:
+    //   · PDF  f(x)  — función de densidad de probabilidad
+    //   · CDF  F(x)  — función de distribución acumulada
+    //   · P(X<x), P(X>x), P(x₁<X<x₂) derivados de la CDF
+    // ============================================================
+
+    // ------------------------------------------------------------
+    // 1. DISTRIBUCIÓN UNIFORME  U(a, b)
+    //    f(x) = 1/(b-a)  para a ≤ x ≤ b
+    //    F(x) = (x-a)/(b-a)
+    // ------------------------------------------------------------
+    function pdfUniforme(x, a, b) {
+      // Fuera del soporte la densidad es 0
+      if (x < a || x > b) return 0;
+      return 1 / (b - a);
+    }
+
+    function cdfUniforme(x, a, b) {
+      if (x <= a) return 0;
+      if (x >= b) return 1;
+      return (x - a) / (b - a);
+    }
+
+    // ------------------------------------------------------------
+    // 2. DISTRIBUCIÓN TRIANGULAR  T(a, b, c)
+    //    Parámetros: a = límite inferior, b = límite superior, c = moda
+    //    f(x) = 2(x-a)/[(b-a)(c-a)]       para a ≤ x ≤ c
+    //    f(x) = 2(b-x)/[(b-a)(b-c)]       para c < x ≤ b
+    //    F(x) = (x-a)²/[(b-a)(c-a)]       para a ≤ x ≤ c
+    //    F(x) = 1 - (b-x)²/[(b-a)(b-c)]   para c < x ≤ b
+    // ------------------------------------------------------------
+    function pdfTriangular(x, a, b, c) {
+      if (x < a || x > b) return 0;
+      if (x <= c) return (2 * (x - a)) / ((b - a) * (c - a));
+      return (2 * (b - x)) / ((b - a) * (b - c));
+    }
+
+    function cdfTriangular(x, a, b, c) {
+      if (x <= a) return 0;
+      if (x >= b) return 1;
+      if (x <= c) return Math.pow(x - a, 2) / ((b - a) * (c - a));
+      return 1 - Math.pow(b - x, 2) / ((b - a) * (b - c));
+    }
+
+    // ------------------------------------------------------------
+    // 3. DISTRIBUCIÓN LINEAL en [a, b]
+    //    Creciente: f(x) = 2(x-a)/(b-a)²   — normalizada: área = 1
+    //    Decreciente: f(x) = 2(b-x)/(b-a)² — normalizada: área = 1
+    //    CDF creciente:   F(x) = (x-a)²/(b-a)²
+    //    CDF decreciente: F(x) = 1 - (b-x)²/(b-a)²
+    // ------------------------------------------------------------
+    function pdfLineal(x, a, b, direccion) {
+      if (x < a || x > b) return 0;
+      const rango = b - a;
+      if (direccion === 'creciente') {
+        return (2 * (x - a)) / (rango * rango);
+      } else {
+        return (2 * (b - x)) / (rango * rango);
+      }
+    }
+
+    function cdfLineal(x, a, b, direccion) {
+      if (x <= a) return 0;
+      if (x >= b) return 1;
+      const rango = b - a;
+      if (direccion === 'creciente') {
+        return Math.pow(x - a, 2) / (rango * rango);
+      } else {
+        return 1 - Math.pow(b - x, 2) / (rango * rango);
+      }
+    }
+
+    // ------------------------------------------------------------
+    // 4. DISTRIBUCIÓN POR PARTES (3 tramos constantes)
+    //    Cada tramo [aₙ, bₙ] tiene altura constante hₙ
+    //    Condición: Σ hₙ(bₙ-aₙ) = 1  (área total = 1)
+    //    CDF: acumulado de las áreas de los tramos hasta x
+    // ------------------------------------------------------------
+    function obtenerTramos() {
+      // Leer parámetros del HTML para los 3 tramos
+      return [
+        {
+          a: parseFloat(document.getElementById('pp-a1').value),
+          b: parseFloat(document.getElementById('pp-b1').value),
+          h: parseFloat(document.getElementById('pp-h1').value)
+        },
+        {
+          a: parseFloat(document.getElementById('pp-a2').value),
+          b: parseFloat(document.getElementById('pp-b2').value),
+          h: parseFloat(document.getElementById('pp-h2').value)
+        },
+        {
+          a: parseFloat(document.getElementById('pp-a3').value),
+          b: parseFloat(document.getElementById('pp-b3').value),
+          h: parseFloat(document.getElementById('pp-h3').value)
+        }
+      ];
+    }
+
+    function pdfPorPartes(x, tramos) {
+      // Devuelve la altura del tramo que contiene x, o 0 si fuera del soporte
+      for (const t of tramos) {
+        if (x >= t.a && x <= t.b) return t.h;
+      }
+      return 0;
+    }
+
+    function cdfPorPartes(x, tramos) {
+      // Acumula el área de los tramos completos antes de x,
+      // más la fracción del tramo que contiene x
+      let acum = 0;
+      for (const t of tramos) {
+        if (x <= t.a) break;
+        if (x >= t.b) {
+          acum += t.h * (t.b - t.a);  // tramo completo
+        } else {
+          acum += t.h * (x - t.a);    // fracción del tramo actual
+          break;
+        }
+      }
+      return Math.min(acum, 1); // limitar a 1 por errores de redondeo
+    }
+
+    function calcularAreaTotal(tramos) {
+      // Suma del área de cada tramo: h × (b - a)
+      return tramos.reduce((suma, t) => suma + t.h * (t.b - t.a), 0);
+    }
+
+    function actualizarAreaPorPartes() {
+      // Muestra el área total en el indicador del panel piecewise
+      const tramos = obtenerTramos();
+      const area   = calcularAreaTotal(tramos);
+      const el     = document.getElementById('pp-area-valor');
+      el.textContent = area.toFixed(4);
+      // Colorear rojo si el área no es ~1, verde si sí
+      el.style.color = Math.abs(area - 1) < 0.001 ? 'var(--success)' : 'var(--danger)';
+    }
+
+    // Recalcular el área cuando el usuario modifica inputs de porpartes
+    document.addEventListener('DOMContentLoaded', function () {
+      ['pp-a1','pp-b1','pp-h1','pp-a2','pp-b2','pp-h2','pp-a3','pp-b3','pp-h3']
+        .forEach(id => {
+          document.getElementById(id).addEventListener('input', actualizarAreaPorPartes);
+        });
+    });
+
+    // ------------------------------------------------------------
+    // 5. DISTRIBUCIÓN NORMAL  N(μ, σ)
+    //    f(x) = (1/σ√2π) · exp(-(x-μ)²/2σ²)
+    //    CDF: no tiene forma cerrada — se usa aproximación numérica
+    //         Abramowitz & Stegun, fórmula 26.2.17
+    //         Error máximo: |ε| < 7.5×10⁻⁸ (suficiente para uso académico)
+    // ------------------------------------------------------------
+    function pdfNormal(x, mu, sigma) {
+      // Constante de normalización y exponente gaussiano
+      const coef = 1 / (sigma * Math.sqrt(2 * Math.PI));
+      const exp  = -Math.pow(x - mu, 2) / (2 * sigma * sigma);
+      return coef * Math.exp(exp);
+    }
+
+    // CDF de la normal estándar N(0,1)
+    // APROXIMACIÓN: Abramowitz & Stegun (1964), fórmula 26.2.17
+    function cdfNormalEstandar(z) {
+      const t = 1 / (1 + 0.2316419 * Math.abs(z));
+      const poly = t * (0.319381530
+        + t * (-0.356563782
+        + t * (1.781477937
+        + t * (-1.821255978
+        + t * 1.330274429))));
+      const pdfZ = Math.exp(-0.5 * z * z) / Math.sqrt(2 * Math.PI);
+      const resultado = 1 - pdfZ * poly;
+      return z >= 0 ? resultado : 1 - resultado;
+    }
+
+    // CDF de N(μ, σ): estandarizar → Z = (x-μ)/σ, luego aplicar CDF estándar
+    function cdfNormal(x, mu, sigma) {
+      return cdfNormalEstandar((x - mu) / sigma);
+    }
+
+    // ============================================================
+    // CALCULADORA CENTRAL DE PROBABILIDADES
+    // Devuelve P según el tipo seleccionado, para cualquier distribución
+    // Entrada: tipo ('menor'|'mayor'|'entre'), x1, x2, distribución y params
+    // ============================================================
+    function calcularP(tipo, x1, x2, dist, params) {
+      // Función auxiliar: CDF unificada por distribución
+      function cdf(x) {
+        switch (dist) {
+          case 'uniforme':
+            return cdfUniforme(x, params.a, params.b);
+          case 'triangular':
+            return cdfTriangular(x, params.a, params.b, params.c);
+          case 'lineal':
+            return cdfLineal(x, params.a, params.b, params.dir);
+          case 'porpartes':
+            return cdfPorPartes(x, params.tramos);
+          case 'normal':
+            return cdfNormal(x, params.mu, params.sigma);
+          default:
+            return 0;
+        }
+      }
+
+      if (tipo === 'menor') return cdf(x1);           // P(X < x)
+      if (tipo === 'mayor') return 1 - cdf(x1);       // P(X > x) = 1 - F(x)
+      if (tipo === 'entre') return cdf(x2) - cdf(x1); // P(x₁ < X < x₂)
+      return 0;
+    }
+
+    // ============================================================
+    // UTILIDADES: leer parámetros del formulario por distribución
+    // ============================================================
+    function leerParametros(dist) {
+      switch (dist) {
+        case 'uniforme':
+          return {
+            a: parseFloat(document.getElementById('unif-a').value),
+            b: parseFloat(document.getElementById('unif-b').value)
+          };
+        case 'triangular':
+          return {
+            a: parseFloat(document.getElementById('tri-a').value),
+            b: parseFloat(document.getElementById('tri-b').value),
+            c: parseFloat(document.getElementById('tri-c').value)
+          };
+        case 'lineal':
+          return {
+            a:   parseFloat(document.getElementById('lin-a').value),
+            b:   parseFloat(document.getElementById('lin-b').value),
+            dir: document.getElementById('lin-direccion').value
+          };
+        case 'porpartes':
+          return { tramos: obtenerTramos() };
+        case 'normal':
+          return {
+            mu:    parseFloat(document.getElementById('norm-mu').value),
+            sigma: parseFloat(document.getElementById('norm-sigma').value)
+          };
+        default:
+          return {};
+      }
+    }
+
+    // Determinar el rango [xMin, xMax] para dibujar la PDF en el canvas
+    function obtenerRango(dist, params) {
+      switch (dist) {
+        case 'uniforme':
+          return { xMin: params.a - 0.5, xMax: params.b + 0.5 };
+        case 'triangular':
+          return { xMin: params.a - 0.5, xMax: params.b + 0.5 };
+        case 'lineal':
+          return { xMin: params.a - 0.5, xMax: params.b + 0.5 };
+        case 'porpartes': {
+          // El rango abarca desde el inicio del primer tramo hasta el fin del último
+          const todos = params.tramos.filter(t => !isNaN(t.a) && !isNaN(t.b));
+          const xMin  = Math.min(...todos.map(t => t.a));
+          const xMax  = Math.max(...todos.map(t => t.b));
+          return { xMin: xMin - 0.5, xMax: xMax + 0.5 };
+        }
+        case 'normal':
+          // Graficar μ ± 4σ cubre el 99.994% del área bajo la curva
+          return {
+            xMin: params.mu - 4 * params.sigma,
+            xMax: params.mu + 4 * params.sigma
+          };
+        default:
+          return { xMin: 0, xMax: 10 };
+      }
+    }
+
+    // Validar parámetros antes de calcular y graficar
+    function validarParametros(dist, params) {
+      switch (dist) {
+        case 'uniforme':
+          if (isNaN(params.a) || isNaN(params.b) || params.a >= params.b)
+            return 'Uniform: lower bound (a) must be less than upper bound (b).';
+          break;
+        case 'triangular':
+          if (isNaN(params.a) || isNaN(params.b) || isNaN(params.c))
+            return 'Triangular: all parameters (a, b, c) are required.';
+          if (params.a >= params.b)
+            return 'Triangular: lower bound (a) must be less than upper bound (b).';
+          if (params.c < params.a || params.c > params.b)
+            return 'Triangular: mode (c) must satisfy a ≤ c ≤ b.';
+          break;
+        case 'lineal':
+          if (isNaN(params.a) || isNaN(params.b) || params.a >= params.b)
+            return 'Linear: lower bound (a) must be less than upper bound (b).';
+          break;
+        case 'porpartes': {
+          const tramos = params.tramos;
+          for (let i = 0; i < tramos.length; i++) {
+            const t = tramos[i];
+            if (isNaN(t.a) || isNaN(t.b) || isNaN(t.h))
+              return `Piecewise: all fields of piece ${i+1} are required.`;
+            if (t.a >= t.b)
+              return `Piecewise: piece ${i+1} start must be less than end.`;
+            if (t.h < 0)
+              return `Piecewise: height of piece ${i+1} cannot be negative.`;
+          }
+          const area = calcularAreaTotal(tramos);
+          if (Math.abs(area - 1) > 0.001)
+            return `Piecewise: total area is ${area.toFixed(4)}. It must equal 1.00 for a valid PDF.`;
+          break;
+        }
+        case 'normal':
+          if (isNaN(params.mu) || isNaN(params.sigma))
+            return 'Normal: mean (μ) and standard deviation (σ) are required.';
+          if (params.sigma <= 0)
+            return 'Normal: standard deviation (σ) must be positive (σ > 0).';
+          break;
+      }
+      return null; // sin error
+    }
+
+    // Mostrar/ocultar error en el panel de simulación
+    function mostrarError(mensaje) {
+      const el = document.getElementById('errorSimulacion');
+      document.getElementById('textoErrorSimulacion').textContent = mensaje;
+      el.classList.add('visible');
+    }
+
+    function ocultarError() {
+      document.getElementById('errorSimulacion').classList.remove('visible');
+    }
+
+    // ============================================================
+    // STAGE 3 — CANVAS: dibujar PDF + sombrear región de probabilidad
+    // ============================================================
+
+    function calcularProbabilidad() {
+      ocultarError();
+
+      // 1. Leer distribución seleccionada y sus parámetros
+      const dist   = document.getElementById('selectorDistribucion').value;
+      const params = leerParametros(dist);
+
+      // 2. Validar parámetros
+      const errorMsg = validarParametros(dist, params);
+      if (errorMsg) {
+        mostrarError(errorMsg);
+        limpiarResultado();
+        return;
+      }
+
+      // 3. Leer tipo de probabilidad y límites
+      const tipo = document.getElementById('tipoProbabilidad').value;
+      const x1   = parseFloat(document.getElementById('limiteX1').value);
+      const x2   = parseFloat(document.getElementById('limiteX2').value);
+
+      if (isNaN(x1)) {
+        mostrarError('Enter a valid value for x (or x₁).');
+        return;
+      }
+      if (tipo === 'entre' && (isNaN(x2) || x2 <= x1)) {
+        mostrarError('For "between two points", x₂ must be greater than x₁.');
+        return;
+      }
+
+      // 4. Calcular probabilidad
+      const prob = calcularP(tipo, x1, x2, dist, params);
+
+      // 5. Construir expresión textual
+      let expresion = '';
+      if (tipo === 'menor')  expresion = `P(X < ${x1})`;
+      if (tipo === 'mayor')  expresion = `P(X > ${x1})`;
+      if (tipo === 'entre')  expresion = `P(${x1} < X < ${x2})`;
+
+      // 6. Mostrar resultado numérico en el panel
+      const valEl = document.getElementById('valorProbabilidad');
+      valEl.textContent = prob.toFixed(4);
+      valEl.className   = 'result-value';
+      document.getElementById('expresionProbabilidad').textContent = expresion;
+      document.getElementById('resultBadge').classList.add('visible');
+
+      // 7. Dibujar PDF con sombreado en el canvas
+      const rango = obtenerRango(dist, params);
+
+      // BUG FIX: expandir el rango si x1 o x2 caen fuera del soporte de la distribución.
+      // Sin esto, cuando el usuario ingresa x=10 en U(0,1), el canvas no cambia
+      // porque x queda fuera del viewport. Ahora el rango se expande para incluir
+      // la línea vertical en el valor consultado.
+      const margenExtra = (rango.xMax - rango.xMin) * 0.15;
+      if (x1 < rango.xMin) rango.xMin = x1 - margenExtra;
+      if (x1 > rango.xMax) rango.xMax = x1 + margenExtra;
+      if (tipo === 'entre' && !isNaN(x2)) {
+        if (x2 < rango.xMin) rango.xMin = x2 - margenExtra;
+        if (x2 > rango.xMax) rango.xMax = x2 + margenExtra;
+      }
+
+      dibujarPDF(dist, params, rango, tipo, x1, x2);
+    }
+
+    // ------------------------------------------------------------
+    // FUNCIÓN PRINCIPAL DE DIBUJO — Canvas 2D API
+    // ------------------------------------------------------------
+    function dibujarPDF(dist, params, rango, tipo, x1, x2) {
+      const canvas = document.getElementById('canvasSimulacion');
+      const placeholder = document.getElementById('placeholderSimulacion');
+
+      // Mostrar canvas, ocultar placeholder
+      canvas.style.display = 'block';
+      placeholder.style.display = 'none';
+
+      // Dimensiones reales del canvas en píxeles (no CSS)
+      const W = canvas.width;   // 800
+      const H = canvas.height;  // 340
+
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, W, H);
+
+      // --- Márgenes internos para dejar espacio a ejes y etiquetas ---
+      const mg = { top: 24, right: 24, bottom: 48, left: 56 };
+      const plotW = W - mg.left - mg.right;   // ancho del área de graficado
+      const plotH = H - mg.top  - mg.bottom;  // alto del área de graficado
+
+      const { xMin, xMax } = rango;
+      const xSpan = xMax - xMin;
+
+      // --- Calcular yMax dinámicamente: punto más alto de la PDF en el rango ---
+      const N_MUESTRAS = 600; // puntos para encontrar el máximo
+      let yMax = 0;
+      for (let i = 0; i <= N_MUESTRAS; i++) {
+        const x   = xMin + (i / N_MUESTRAS) * xSpan;
+        const val = evaluarPDF(x, dist, params);
+        if (val > yMax) yMax = val;
+      }
+      if (yMax === 0) yMax = 1; // evitar división por cero
+      yMax *= 1.25; // margen superior del 25% para que la curva no toque el borde
+
+      // --- Funciones de conversión: coordenadas matemáticas → píxeles ---
+      function xPx(x) { return mg.left + ((x - xMin) / xSpan) * plotW; }
+      function yPx(y) { return mg.top  + plotH - (y / yMax)   * plotH; }
+
+      // ---- FONDO DEL CANVAS ----
+      ctx.fillStyle = '#F9FAFB';
+      ctx.fillRect(0, 0, W, H);
+
+      // ---- ÁREA DE GRAFICADO (fondo blanco) ----
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(mg.left, mg.top, plotW, plotH);
+
+      // ---- GRID HORIZONTAL (líneas de referencia) ----
+      ctx.strokeStyle = '#E5E7EB';
+      ctx.lineWidth   = 1;
+      const N_GRID = 4;
+      for (let i = 0; i <= N_GRID; i++) {
+        const y    = (i / N_GRID) * yMax;
+        const yPos = yPx(y);
+        ctx.beginPath();
+        ctx.moveTo(mg.left, yPos);
+        ctx.lineTo(mg.left + plotW, yPos);
+        ctx.stroke();
+
+        // Etiqueta del eje Y
+        ctx.fillStyle  = '#6B7280';
+        ctx.font       = '11px "Plus Jakarta Sans", sans-serif';
+        ctx.textAlign  = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(y.toFixed(3), mg.left - 8, yPos);
+      }
+
+      // ---- ETIQUETAS EJE X ----
+      ctx.fillStyle    = '#6B7280';
+      ctx.font         = '11px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'top';
+      const N_TICKS = 6;
+      for (let i = 0; i <= N_TICKS; i++) {
+        const x    = xMin + (i / N_TICKS) * xSpan;
+        const xPos = xPx(x);
+        ctx.fillText(x.toFixed(2), xPos, mg.top + plotH + 8);
+        // Tick mark
+        ctx.strokeStyle = '#D1D5DB';
+        ctx.lineWidth   = 1;
+        ctx.beginPath();
+        ctx.moveTo(xPos, mg.top + plotH);
+        ctx.lineTo(xPos, mg.top + plotH + 4);
+        ctx.stroke();
+      }
+
+      // ---- REGIÓN SOMBREADA (área de probabilidad) ----
+      // Se dibuja ANTES de la curva para que quede debajo de ella
+      const shadeLimites = obtenerLimiteSombreado(tipo, x1, x2, xMin, xMax);
+      const sX1 = Math.max(shadeLimites.lo, xMin);
+      const sX2 = Math.min(shadeLimites.hi, xMax);
+
+      ctx.beginPath();
+      ctx.moveTo(xPx(sX1), yPx(0));
+      const N_SHADE = 400;
+      for (let i = 0; i <= N_SHADE; i++) {
+        const x   = sX1 + (i / N_SHADE) * (sX2 - sX1);
+        const fxv = evaluarPDF(x, dist, params);
+        ctx.lineTo(xPx(x), yPx(fxv));
+      }
+      ctx.lineTo(xPx(sX2), yPx(0));
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(99,102,241,0.18)';
+      ctx.fill();
+
+      // Borde del sombreado
+      ctx.beginPath();
+      for (let i = 0; i <= N_SHADE; i++) {
+        const x   = sX1 + (i / N_SHADE) * (sX2 - sX1);
+        const fxv = evaluarPDF(x, dist, params);
+        if (i === 0) ctx.moveTo(xPx(x), yPx(fxv));
+        else         ctx.lineTo(xPx(x), yPx(fxv));
+      }
+      ctx.strokeStyle = 'rgba(99,102,241,0.55)';
+      ctx.lineWidth   = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // ---- CURVA PDF COMPLETA ----
+      ctx.beginPath();
+      let primero = true;
+      const N_CURVA = 800;
+      for (let i = 0; i <= N_CURVA; i++) {
+        const x   = xMin + (i / N_CURVA) * xSpan;
+        const fxv = evaluarPDF(x, dist, params);
+        const px  = xPx(x);
+        const py  = yPx(fxv);
+        if (primero) { ctx.moveTo(px, py); primero = false; }
+        else           ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = '#6366F1';
+      ctx.lineWidth   = 2.5;
+      ctx.lineJoin    = 'round';
+      ctx.stroke();
+
+      // ---- LÍNEAS VERTICALES EN LOS LÍMITES DE PROBABILIDAD ----
+      dibujarLineaVertical(ctx, xPx, yPx, x1, dist, params, yMax, mg, plotH);
+      if (tipo === 'entre') dibujarLineaVertical(ctx, xPx, yPx, x2, dist, params, yMax, mg, plotH);
+
+      // ---- EJES PRINCIPALES ----
+      ctx.strokeStyle = '#9CA3AF';
+      ctx.lineWidth   = 1.5;
+      // Eje X
+      ctx.beginPath();
+      ctx.moveTo(mg.left, mg.top + plotH);
+      ctx.lineTo(mg.left + plotW, mg.top + plotH);
+      ctx.stroke();
+      // Eje Y
+      ctx.beginPath();
+      ctx.moveTo(mg.left, mg.top);
+      ctx.lineTo(mg.left, mg.top + plotH);
+      ctx.stroke();
+
+      // ---- ETIQUETAS DE EJES ----
+      ctx.fillStyle    = '#374151';
+      ctx.font         = 'bold 12px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('x', W / 2, H - 4);
+
+      ctx.save();
+      ctx.translate(14, mg.top + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText('f(x)', 0, 0);
+      ctx.restore();
+    }
+
+    // Evalúa la PDF en un punto x para cualquier distribución
+    function evaluarPDF(x, dist, params) {
+      switch (dist) {
+        case 'uniforme':   return pdfUniforme(x, params.a, params.b);
+        case 'triangular': return pdfTriangular(x, params.a, params.b, params.c);
+        case 'lineal':     return pdfLineal(x, params.a, params.b, params.dir);
+        case 'porpartes':  return pdfPorPartes(x, params.tramos);
+        case 'normal':     return pdfNormal(x, params.mu, params.sigma);
+        default:           return 0;
+      }
+    }
+
+    // Determinar los límites del sombreado según el tipo de probabilidad
+    function obtenerLimiteSombreado(tipo, x1, x2, xMin, xMax) {
+      if (tipo === 'menor') return { lo: xMin, hi: x1 };
+      if (tipo === 'mayor') return { lo: x1,   hi: xMax };
+      if (tipo === 'entre') return { lo: x1,   hi: x2 };
+      return { lo: xMin, hi: xMax };
+    }
+
+    // Dibujar una línea vertical punteada en un valor x
+    // La línea siempre va desde el eje X hasta la parte superior del plot.
+    // Si x está dentro del soporte, la línea llega hasta f(x).
+    // Si x está fuera del soporte (f(x)=0), la línea va hasta el tope del plot
+    // para que sea visible y la etiqueta no quede aplastada sobre el eje.
+    function dibujarLineaVertical(ctx, xPx, yPx, x, dist, params, yMax, mg, plotH) {
+      const px  = xPx(x);
+      const fxv = evaluarPDF(x, dist, params);
+
+      // Altura hasta la que llega la línea en coordenadas de píxeles:
+      // - Si f(x) > 0: llega hasta f(x) (dentro del soporte)
+      // - Si f(x) = 0: llega hasta el 85% del alto del plot (fuera del soporte)
+      const yLineaPx = fxv > 0
+        ? yPx(Math.min(fxv, yMax))
+        : mg.top + plotH * 0.15;  // 15% desde arriba del área de graficado
+
+      ctx.beginPath();
+      ctx.moveTo(px, yPx(0));
+      ctx.lineTo(px, yLineaPx);
+      ctx.strokeStyle = '#6366F1';
+      ctx.lineWidth   = 1.5;
+      ctx.setLineDash([5, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Etiqueta siempre en la parte superior de la línea, nunca sobre el eje
+      ctx.fillStyle    = '#6366F1';
+      ctx.font         = 'bold 11px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(x.toFixed(2), px, yLineaPx - 4);
+    }
+
+    // ============================================================
+    // ETAPA 4 — PARSER CSV + ESTADÍSTICAS BÁSICAS
+    // Detecta automáticamente la columna numérica del CSV,
+    // calcula n, min, max, μ (media), σ (desviación estándar),
+    // y los muestra en #panelEstadisticas.
+    // Datasets esperados:
+    //   DS1: delivery_time_min   | n=60 | μ≈40.39 | σ≈10.01
+    //   DS2: weekly_screen_time_hours | n=60 | μ≈13.75 | σ≈5.56
+    //   DS3: resale_value_usd    | n=60 | μ≈492.22| σ≈97.81
+    // ============================================================
+
+    // Variable global que guarda el array de datos cargados
+    let datosActuales = [];
+    // Nombre del archivo actual (para mostrar en UI)
+    let nombreArchivoActual = '';
+
+    // --- Punto de entrada: input file ---
+    function cargarCSV(input) {
+      const archivo = input.files[0];
+      if (!archivo) return;
+      leerArchivo(archivo);
+    }
+
+    // --- Punto de entrada: drag-and-drop ---
+    function manejarDrop(event) {
+      event.preventDefault();
+      const zona = document.getElementById('zonaCarga');
+      zona.style.borderColor = 'var(--border)';
+      zona.style.background  = '';
+
+      const archivos = event.dataTransfer.files;
+      if (archivos.length === 0) return;
+      if (archivos.length > 1) {
+        mostrarErrorModelado('Please drop only one CSV file at a time.');
+        return;
+      }
+      const archivo = archivos[0];
+      if (!archivo.name.toLowerCase().endsWith('.csv')) {
+        mostrarErrorModelado('The file must have a .csv extension. Got: ' + archivo.name);
+        return;
+      }
+      leerArchivo(archivo);
+    }
+
+    // --- Leer el archivo con FileReader y llamar al parser ---
+    function leerArchivo(archivo) {
+      ocultarErrorModelado();
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const texto = e.target.result;
+        procesarCSV(texto, archivo.name);
+      };
+      reader.onerror = function() {
+        mostrarErrorModelado('Could not read the file. Try again.');
+      };
+      reader.readAsText(archivo);
+    }
+
+    // --- Parser CSV: detecta la columna numérica y extrae los valores ---
+    function procesarCSV(texto, nombreArchivo) {
+      // Separar líneas; eliminar líneas vacías y espacios sobrantes
+      const lineas = texto.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+
+      if (lineas.length < 2) {
+        mostrarErrorModelado('The CSV file must have at least one header row and one data row.');
+        return;
+      }
+
+      // Detectar separador: coma o punto y coma
+      const separador = lineas[0].includes(';') ? ';' : ',';
+
+      // Leer encabezados
+      const encabezados = lineas[0].split(separador).map(h => h.trim());
+
+      // Detectar cuál columna contiene números:
+      // Se analiza la primera fila de datos y se elige la columna
+      // cuyo valor se pueda convertir a un número finito.
+      const primeraFila = lineas[1].split(separador).map(v => v.trim());
+      let colNumerica = -1;
+
+      for (let i = 0; i < primeraFila.length; i++) {
+        const val = Number(primeraFila[i]);
+        if (!isNaN(val) && isFinite(val)) {
+          colNumerica = i;
+          break;
+        }
+      }
+
+      if (colNumerica === -1) {
+        mostrarErrorModelado('No numeric column was found in the CSV. Check the file format.');
+        return;
+      }
+
+      // Extraer todos los valores numéricos de esa columna
+      const valores = [];
+      for (let i = 1; i < lineas.length; i++) {
+        const partes = lineas[i].split(separador);
+        if (partes.length <= colNumerica) continue; // fila incompleta: saltar
+        const val = Number(partes[colNumerica].trim());
+        if (!isNaN(val) && isFinite(val)) {
+          valores.push(val);
+        }
+      }
+
+      if (valores.length === 0) {
+        mostrarErrorModelado('No valid numeric values were found in the detected column.');
+        return;
+      }
+
+      // Guardar datos y nombre de columna globalmente
+      datosActuales = valores;
+      nombreArchivoActual = nombreArchivo;
+
+      // Calcular estadísticas
+      const stats = calcularEstadisticas(valores);
+
+      // Actualizar panel de estadísticas en la UI
+      document.getElementById('stat-n').textContent     = stats.n;
+      document.getElementById('stat-min').textContent   = stats.min.toFixed(2);
+      document.getElementById('stat-max').textContent   = stats.max.toFixed(2);
+      document.getElementById('stat-media').textContent = stats.media.toFixed(4);
+      document.getElementById('stat-sigma').textContent = stats.sigma.toFixed(4);
+      document.getElementById('panelEstadisticas').classList.add('visible');
+
+      // Actualizar zona de carga para confirmar el archivo
+      document.getElementById('zonaCarga').querySelector('.upload-text').innerHTML =
+        '✅ <strong>' + nombreArchivo + '</strong><br/>'
+        + stats.n + ' observations · column: ' + encabezados[colNumerica];
+
+      // Ocultar mensaje de error si existía
+      ocultarErrorModelado();
+
+      // ---- ETAPA 5: dibujar histograma en densidad ----
+      dibujarHistograma(valores, stats);
+
+      // Restablecer el selector de modelos y ocultar paneles de resultados
+      document.getElementById('selectorModelo').value = '';
+      document.getElementById('panelParamsEstimados').classList.remove('visible');
+      document.getElementById('bloqueInterpretacion').classList.remove('visible');
+
+      // Ocultar y resetear el panel de probabilidad C9
+      document.getElementById('panelProbC9').classList.remove('visible');
+      document.getElementById('c9-result-box').classList.remove('visible');
+      ocultarErrorProbC9();
+      // Limpiar resultados automáticos
+      ['c9-p1s','c9-p2s','c9-ptails'].forEach(id => {
+        document.getElementById(id).textContent = '—';
+      });
+      // Resetear estado global del modelo activo
+      modeloActivo  = null;
+      paramsActivos = null;
+      statsActivas  = null;
+
+      // Restaurar placeholder de columna derecha
+      const rph = document.getElementById('resultsPlaceholder');
+      if (rph) rph.style.display = 'flex';
+    }
+
+    // --- Calcular n, min, max, μ, σ muestral ---
+    function calcularEstadisticas(datos) {
+      const n   = datos.length;
+      const min = Math.min(...datos);
+      const max = Math.max(...datos);
+
+      // Media aritmética: μ = Σxᵢ / n
+      const media = datos.reduce((suma, v) => suma + v, 0) / n;
+
+      // Varianza muestral (divisor n-1): s² = Σ(xᵢ − μ)² / (n-1)
+      const varianza = datos.reduce((suma, v) => suma + Math.pow(v - media, 2), 0) / (n - 1);
+
+      // Desviación estándar muestral: s = √s²
+      const sigma = Math.sqrt(varianza);
+
+      return { n, min, max, media, sigma };
+    }
+
+    // ============================================================
+    // ETAPA 5 — HISTOGRAMA EN ESCALA DE DENSIDAD
+    // La escala vertical es densidad (frecuencia relativa / ancho de bin)
+    // para que sea directamente comparable con la PDF ajustada.
+    // Número de bins: regla de Sturges → k = ⌈log₂(n) + 1⌉
+    // ============================================================
+
+    function dibujarHistograma(datos, stats, paramsModelo, tipoModelo) {
+      // Caso borde: necesitamos al menos 2 observaciones para un histograma útil
+      if (!datos || datos.length < 2) {
+        mostrarErrorModelado('At least 2 data points are required to draw a histogram.');
+        return;
+      }
+      const canvas = document.getElementById('canvasModelado');
+      const ctx    = canvas.getContext('2d');
+
+      // Mostrar canvas y ocultar placeholder
+      canvas.style.display = 'block';
+      document.getElementById('placeholderModelado').style.display = 'none';
+
+      // Dimensiones del canvas
+      const W = canvas.offsetWidth  || 800;
+      const H = canvas.offsetHeight || 340;
+      canvas.width  = W;
+      canvas.height = H;
+
+      // Márgenes del área de graficado
+      const mg = { top: 24, right: 24, bottom: 48, left: 56 };
+      const plotW = W - mg.left - mg.right;
+      const plotH = H - mg.top  - mg.bottom;
+
+      // ---- Calcular bins (Sturges) ----
+      const nBins  = Math.ceil(Math.log2(datos.length) + 1);
+      const rango  = stats.max - stats.min;
+      // Caso borde: si todos los datos son idénticos, el rango es 0
+      if (rango === 0) {
+        mostrarErrorModelado('All data values are identical — cannot draw a histogram.');
+        return;
+      }
+      const anchoBin = rango / nBins;
+
+      // Inicializar conteos
+      const conteos = new Array(nBins).fill(0);
+      datos.forEach(v => {
+        // Índice del bin: asegurar que el valor máximo caiga en el último bin
+        let idx = Math.floor((v - stats.min) / anchoBin);
+        if (idx >= nBins) idx = nBins - 1;
+        conteos[idx]++;
+      });
+
+      // Convertir conteos a densidad: densidad = frecuencia_relativa / ancho_bin
+      const densidades = conteos.map(c => (c / datos.length) / anchoBin);
+      let yMax = Math.max(...densidades);
+
+      // Si hay modelo, considerar también el máximo de la PDF
+      if (paramsModelo && tipoModelo) {
+        const N_PDF = 500;
+        const xMin  = stats.min - anchoBin * 0.5;
+        const xMax  = stats.max + anchoBin * 0.5;
+        for (let i = 0; i <= N_PDF; i++) {
+          const x   = xMin + (i / N_PDF) * (xMax - xMin);
+          const fxv = evaluarPDFModelo(x, tipoModelo, paramsModelo, stats);
+          if (fxv > yMax) yMax = fxv;
+        }
+      }
+
+      yMax *= 1.25; // margen superior 25%
+
+      // ---- Funciones de conversión matemática → píxeles ----
+      const xCanvasMin = stats.min - anchoBin * 0.5;
+      const xCanvasMax = stats.max + anchoBin * 0.5;
+      const xSpan      = xCanvasMax - xCanvasMin;
+
+      function xPx(x) { return mg.left + ((x - xCanvasMin) / xSpan) * plotW; }
+      function yPx(y) { return mg.top  + plotH - (y / yMax) * plotH; }
+
+      // ---- Fondo ----
+      ctx.fillStyle = '#F9FAFB';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(mg.left, mg.top, plotW, plotH);
+
+      // ---- Grid horizontal ----
+      ctx.strokeStyle = '#E5E7EB';
+      ctx.lineWidth   = 1;
+      const N_GRID = 4;
+      for (let i = 0; i <= N_GRID; i++) {
+        const y    = (i / N_GRID) * yMax;
+        const yPos = yPx(y);
+        ctx.beginPath();
+        ctx.moveTo(mg.left, yPos);
+        ctx.lineTo(mg.left + plotW, yPos);
+        ctx.stroke();
+        ctx.fillStyle    = '#6B7280';
+        ctx.font         = '10px "Plus Jakarta Sans", sans-serif';
+        ctx.textAlign    = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(y.toFixed(4), mg.left - 6, yPos);
+      }
+
+      // ---- Barras del histograma ----
+      for (let i = 0; i < nBins; i++) {
+        const xIzq = stats.min + i * anchoBin;
+        const xDer = xIzq + anchoBin;
+        const pxL  = xPx(xIzq);
+        const pxR  = xPx(xDer);
+        const pxY  = yPx(densidades[i]);
+        const pxBase = yPx(0);
+
+        // Relleno semitransparente
+        ctx.fillStyle = 'rgba(99,102,241,0.18)';
+        ctx.fillRect(pxL, pxY, pxR - pxL, pxBase - pxY);
+
+        // Borde de la barra
+        ctx.strokeStyle = 'rgba(99,102,241,0.55)';
+        ctx.lineWidth   = 1;
+        ctx.strokeRect(pxL, pxY, pxR - pxL, pxBase - pxY);
+      }
+
+      // ---- PDF ajustada superpuesta (si existe) ----
+      if (paramsModelo && tipoModelo) {
+        const N_CURVA = 800;
+        ctx.beginPath();
+        let primero = true;
+        for (let i = 0; i <= N_CURVA; i++) {
+          const x   = xCanvasMin + (i / N_CURVA) * xSpan;
+          const fxv = evaluarPDFModelo(x, tipoModelo, paramsModelo, stats);
+          const px  = xPx(x);
+          const py  = yPx(fxv);
+          if (primero) { ctx.moveTo(px, py); primero = false; }
+          else           ctx.lineTo(px, py);
+        }
+        ctx.strokeStyle = '#EF4444'; // rojo — diferenciado del histograma azul
+        ctx.lineWidth   = 2.5;
+        ctx.lineJoin    = 'round';
+        ctx.stroke();
+
+        // Leyenda: histograma vs PDF
+        const leyX = mg.left + 12;
+        const leyY = mg.top  + 14;
+        // Histograma
+        ctx.fillStyle = 'rgba(99,102,241,0.30)';
+        ctx.fillRect(leyX, leyY - 7, 18, 10);
+        ctx.fillStyle    = '#374151';
+        ctx.font         = '11px "Plus Jakarta Sans", sans-serif';
+        ctx.textAlign    = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Histogram (density)', leyX + 22, leyY - 2);
+        // PDF ajustada
+        ctx.strokeStyle = '#EF4444';
+        ctx.lineWidth   = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(leyX,      leyY + 14);
+        ctx.lineTo(leyX + 18, leyY + 14);
+        ctx.stroke();
+        ctx.fillStyle = '#374151';
+        ctx.fillText('Fitted PDF', leyX + 22, leyY + 14);
+      }
+
+      // ---- Etiquetas eje X ----
+      ctx.fillStyle    = '#6B7280';
+      ctx.font         = '10px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'top';
+      const N_TICKS = Math.min(nBins, 8);
+      for (let i = 0; i <= N_TICKS; i++) {
+        const x    = xCanvasMin + (i / N_TICKS) * xSpan;
+        const xPos = xPx(x);
+        ctx.fillText(x.toFixed(1), xPos, mg.top + plotH + 8);
+        ctx.strokeStyle = '#D1D5DB';
+        ctx.lineWidth   = 1;
+        ctx.beginPath();
+        ctx.moveTo(xPos, mg.top + plotH);
+        ctx.lineTo(xPos, mg.top + plotH + 4);
+        ctx.stroke();
+      }
+
+      // ---- Ejes principales ----
+      ctx.strokeStyle = '#9CA3AF';
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(mg.left, mg.top + plotH);
+      ctx.lineTo(mg.left + plotW, mg.top + plotH);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(mg.left, mg.top);
+      ctx.lineTo(mg.left, mg.top + plotH);
+      ctx.stroke();
+
+      // ---- Etiquetas de ejes ----
+      ctx.fillStyle    = '#374151';
+      ctx.font         = 'bold 11px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('x', W / 2, H - 4);
+
+      ctx.save();
+      ctx.translate(13, mg.top + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText('density f(x)', 0, 0);
+      ctx.restore();
+    }
+
+    // ============================================================
+    // ETAPA 6 — ESTIMACIÓN DE PARÁMETROS Y PDF SUPERPUESTA
+    // Para cada modelo, estima los parámetros desde los datos cargados,
+    // los muestra en #panelParamsEstimados, dibuja el histograma con
+    // la PDF ajustada encima y genera una interpretación automática.
+    //
+    // Modelos soportados:
+    //   uniforme        → â=min, b̂=max
+    //   triangular      → â=min, b̂=max, ĉ=moda (bin más frecuente)
+    //   lineal          → â=min, b̂=max, dirección por asimetría (skewness)
+    //   uniforme-partes → 4 piezas de igual ancho, altura = densidad por pieza
+    //   normal          → μ̂=media muestral, σ̂=desv. estándar muestral
+    // ============================================================
+
+    function ajustarModelo(modelo) {
+      // Verificar que haya datos cargados
+      if (datosActuales.length === 0) {
+        mostrarErrorModelado('Upload a CSV file before selecting a model.');
+        return;
+      }
+      if (!modelo) return; // opción vacía: no hacer nada
+
+      ocultarErrorModelado();
+
+      const stats  = calcularEstadisticas(datosActuales);
+      let params   = {};
+      let textoParams = '';
+      let interpretacion = '';
+
+      // ---- Estimar parámetros según el modelo ----
+      switch (modelo) {
+
+        // ----------------------------------------------------------
+        // UNIFORME: â = min, b̂ = max
+        // Estimación MOM: los extremos son los estimadores naturales.
+        // ----------------------------------------------------------
+        case 'uniforme': {
+          params = { a: stats.min, b: stats.max };
+          textoParams =
+            '<div class="stat-row"><span class="stat-name">â (min)</span>'
+            + '<span class="stat-value">' + stats.min.toFixed(4) + '</span></div>'
+            + '<div class="stat-row"><span class="stat-name">b̂ (max)</span>'
+            + '<span class="stat-value">' + stats.max.toFixed(4) + '</span></div>'
+            + '<div class="stat-row"><span class="stat-name">Fitted mean</span>'
+            + '<span class="stat-value">' + ((stats.min + stats.max) / 2).toFixed(4) + '</span></div>';
+
+          // Bondad de ajuste visual: comparar σ teórica vs muestral
+          const sigmaTeor = (stats.max - stats.min) / Math.sqrt(12);
+          const ratioSig  = Math.abs(sigmaTeor - stats.sigma) / stats.sigma;
+          interpretacion = ratioSig < 0.15
+            ? '✅ <strong>Reasonable fit.</strong> The uniform model captures the data range well. '
+              + 'The theoretical σ ≈ ' + sigmaTeor.toFixed(3) + ' is close to the sample σ = ' + stats.sigma.toFixed(3) + '.'
+            : '⚠️ <strong>Moderate fit.</strong> The uniform model uses the observed range, but the sample σ ('
+              + stats.sigma.toFixed(3) + ') differs from the uniform theoretical σ ('
+              + sigmaTeor.toFixed(3) + '). The data may not be uniformly spread.';
+          break;
+        }
+
+        // ----------------------------------------------------------
+        // TRIANGULAR: â = min, b̂ = max
+        // ĉ (moda) = punto medio del bin más frecuente (estimación MOM)
+        // ----------------------------------------------------------
+        case 'triangular': {
+          // Encontrar el bin más frecuente para estimar la moda
+          const nBins  = Math.ceil(Math.log2(datosActuales.length) + 1);
+          const ancho  = (stats.max - stats.min) / nBins;
+          const conteos = new Array(nBins).fill(0);
+          datosActuales.forEach(v => {
+            let idx = Math.floor((v - stats.min) / ancho);
+            if (idx >= nBins) idx = nBins - 1;
+            conteos[idx]++;
+          });
+          const idxMax = conteos.indexOf(Math.max(...conteos));
+          // Moda estimada: punto medio del bin más poblado
+          const modaEst = stats.min + (idxMax + 0.5) * ancho;
+          params = { a: stats.min, b: stats.max, c: modaEst };
+
+          // Media teórica de la triangular: (a + b + c) / 3
+          const mediaTeor = (stats.min + stats.max + modaEst) / 3;
+          textoParams =
+            '<div class="stat-row"><span class="stat-name">â (min)</span>'
+            + '<span class="stat-value">' + stats.min.toFixed(4) + '</span></div>'
+            + '<div class="stat-row"><span class="stat-name">b̂ (max)</span>'
+            + '<span class="stat-value">' + stats.max.toFixed(4) + '</span></div>'
+            + '<div class="stat-row"><span class="stat-name">ĉ (mode)</span>'
+            + '<span class="stat-value">' + modaEst.toFixed(4) + '</span></div>'
+            + '<div class="stat-row"><span class="stat-name">Fitted mean</span>'
+            + '<span class="stat-value">' + mediaTeor.toFixed(4) + '</span></div>';
+
+          const diffMedia = Math.abs(mediaTeor - stats.media) / stats.media;
+          interpretacion = diffMedia < 0.08
+            ? '✅ <strong>Reasonable fit.</strong> The triangular model\'s mean (' + mediaTeor.toFixed(3)
+              + ') is close to the sample mean (' + stats.media.toFixed(3) + '). '
+              + 'The estimated mode suggests a peak around ' + modaEst.toFixed(2) + '.'
+            : '⚠️ <strong>Moderate fit.</strong> The triangular model\'s mean (' + mediaTeor.toFixed(3)
+              + ') differs from the sample mean (' + stats.media.toFixed(3) + '). '
+              + 'Consider whether the data has a single clear peak.';
+          break;
+        }
+
+        // ----------------------------------------------------------
+        // LINEAL: â = min, b̂ = max
+        // Dirección: determinada por el coeficiente de asimetría (skewness)
+        //   skewness < 0 → datos concentrados a la derecha → decreciente
+        //   skewness ≥ 0 → datos concentrados a la izquierda → creciente
+        // ----------------------------------------------------------
+        case 'lineal': {
+          // Calcular skewness muestral: g₁ = [n/((n-1)(n-2))] · Σ[(xᵢ-μ)/σ]³
+          const n = stats.n;
+          const skew = (n / ((n - 1) * (n - 2)))
+            * datosActuales.reduce((s, v) => s + Math.pow((v - stats.media) / stats.sigma, 3), 0);
+
+          const dir = skew >= 0 ? 'creciente' : 'decreciente';
+          params = { a: stats.min, b: stats.max, dir };
+
+          // Media teórica de la lineal: (a+b)/2 para ambas direcciones
+          const mediaTeor = (stats.min + stats.max) / 2;
+          textoParams =
+            '<div class="stat-row"><span class="stat-name">â (min)</span>'
+            + '<span class="stat-value">' + stats.min.toFixed(4) + '</span></div>'
+            + '<div class="stat-row"><span class="stat-name">b̂ (max)</span>'
+            + '<span class="stat-value">' + stats.max.toFixed(4) + '</span></div>'
+            + '<div class="stat-row"><span class="stat-name">Direction</span>'
+            + '<span class="stat-value">' + (dir === 'creciente' ? 'Increasing ↗' : 'Decreasing ↘') + '</span></div>'
+            + '<div class="stat-row"><span class="stat-name">Skewness</span>'
+            + '<span class="stat-value">' + skew.toFixed(4) + '</span></div>'
+            + '<div class="stat-row"><span class="stat-name">Fitted mean</span>'
+            + '<span class="stat-value">' + mediaTeor.toFixed(4) + '</span></div>';
+
+          const diffMedia = Math.abs(mediaTeor - stats.media) / stats.media;
+          interpretacion = diffMedia < 0.12
+            ? '✅ <strong>Reasonable fit.</strong> Direction: <em>' + (dir === 'creciente' ? 'increasing' : 'decreasing')
+              + '</em> (skewness = ' + skew.toFixed(3) + '). The fitted mean (' + mediaTeor.toFixed(3)
+              + ') is close to the sample mean (' + stats.media.toFixed(3) + ').'
+            : '⚠️ <strong>Limited fit.</strong> A linear model assumes a monotone trend. '
+              + 'The sample mean (' + stats.media.toFixed(3) + ') differs from the fitted mean ('
+              + mediaTeor.toFixed(3) + '). Consider another model if the data is symmetric or multimodal.';
+          break;
+        }
+
+        // ----------------------------------------------------------
+        // UNIFORME POR PARTES (piecewise uniform): 4 piezas de igual ancho
+        // Altura de cada pieza = densidad observada en ese intervalo
+        // ∑ altura_i · ancho_i = 1 garantizado por construcción
+        // ----------------------------------------------------------
+        case 'uniforme-partes': {
+          const nPiezas = 4;
+          const anchoPieza = (stats.max - stats.min) / nPiezas;
+
+          // Contar observaciones en cada pieza
+          const conteoPiezas = new Array(nPiezas).fill(0);
+          datosActuales.forEach(v => {
+            let idx = Math.floor((v - stats.min) / anchoPieza);
+            if (idx >= nPiezas) idx = nPiezas - 1;
+            conteoPiezas[idx]++;
+          });
+
+          // Altura de cada pieza = frecuencia relativa / ancho → densidad
+          const alturas = conteoPiezas.map(c => (c / stats.n) / anchoPieza);
+
+          // Construir tramos en el mismo formato que pdfPorPartes()
+          const tramos = alturas.map((h, i) => ({
+            a: stats.min + i * anchoPieza,
+            b: stats.min + (i + 1) * anchoPieza,
+            h: h
+          }));
+          // Asegurar que el borde derecho sea exactamente stats.max
+          tramos[nPiezas - 1].b = stats.max;
+
+          params = { tramos };
+
+          // Construir texto de parámetros
+          textoParams = tramos.map((t, i) =>
+            '<div class="stat-row">'
+            + '<span class="stat-name">Piece ' + (i + 1) + ' [' + t.a.toFixed(2) + ', ' + t.b.toFixed(2) + ']</span>'
+            + '<span class="stat-value">h=' + t.h.toFixed(4) + '</span></div>'
+          ).join('');
+          textoParams +=
+            '<div class="stat-row"><span class="stat-name">Piece width</span>'
+            + '<span class="stat-value">' + anchoPieza.toFixed(4) + '</span></div>';
+
+          // Verificar que el área total ≈ 1
+          const areaTotal = tramos.reduce((s, t) => s + t.h * (t.b - t.a), 0);
+          interpretacion = '✅ <strong>Piecewise uniform model.</strong> 4 equal-width pieces. '
+            + 'Total area = ' + areaTotal.toFixed(4) + ' (should be 1.00). '
+            + 'This model captures the overall shape of the histogram but uses only 4 discrete heights. '
+            + 'It is a step-function approximation — good for rough shape matching, but not smooth.';
+          break;
+        }
+
+        // ----------------------------------------------------------
+        // NORMAL: μ̂ = media muestral, σ̂ = desv. estándar muestral
+        // Estimadores MLE / MOM coinciden para la distribución normal.
+        // ----------------------------------------------------------
+        case 'normal': {
+          params = { mu: stats.media, sigma: stats.sigma };
+
+          // Probabilidad teórica en ±1σ de la normal: 68.27%
+          const p1sigma = cdfNormal(stats.media + stats.sigma, stats.media, stats.sigma)
+                        - cdfNormal(stats.media - stats.sigma, stats.media, stats.sigma);
+
+          // Contar observaciones empíricas en [μ-σ, μ+σ] para comparar
+          const dentro1sigma = datosActuales.filter(
+            v => v >= stats.media - stats.sigma && v <= stats.media + stats.sigma
+          ).length;
+          const pEmp1sigma = dentro1sigma / stats.n;
+
+          textoParams =
+            '<div class="stat-row"><span class="stat-name">&#956;&#770; (mean)</span>'
+            + '<span class="stat-value">' + stats.media.toFixed(4) + '</span></div>'
+            + '<div class="stat-row"><span class="stat-name">&#963;&#770; (std. dev.)</span>'
+            + '<span class="stat-value">' + stats.sigma.toFixed(4) + '</span></div>'
+            + '<div class="stat-row"><span class="stat-name">Empirical P(&#956;&#8722;&#963;&lt;X&lt;&#956;+&#963;)</span>'
+            + '<span class="stat-value">' + (pEmp1sigma * 100).toFixed(1) + '%</span></div>';
+
+          const diffP = Math.abs(pEmp1sigma - p1sigma);
+          interpretacion = diffP < 0.08
+            ? '✅ <strong>Good fit.</strong> The empirical proportion in [μ±σ] ('
+              + (pEmp1sigma * 100).toFixed(1) + '%) is close to the normal theoretical 68.27%. '
+              + 'μ̂ = ' + stats.media.toFixed(3) + ', σ̂ = ' + stats.sigma.toFixed(3) + '.'
+            : '⚠️ <strong>Moderate fit.</strong> The empirical proportion in [μ±σ] ('
+              + (pEmp1sigma * 100).toFixed(1) + '%) differs from the normal theoretical 68.27%. '
+              + 'The data may be skewed or have heavier tails than a normal distribution.';
+          break;
+        }
+
+        default:
+          mostrarErrorModelado('Unknown model: ' + modelo);
+          return;
+      }
+
+      // ---- Mostrar parámetros estimados ----
+      document.getElementById('contenidoParamsEstimados').innerHTML = textoParams;
+      document.getElementById('panelParamsEstimados').classList.add('visible');
+
+      // ---- Ocultar placeholder de columna derecha ----
+      const rph = document.getElementById('resultsPlaceholder');
+      if (rph) rph.style.display = 'none';
+
+      // ---- Mostrar interpretación ----
+      document.getElementById('bloqueInterpretacion').innerHTML = interpretacion;
+      document.getElementById('bloqueInterpretacion').classList.add('visible');
+
+      // ---- Redibujar histograma CON la PDF superpuesta ----
+      const stats2 = calcularEstadisticas(datosActuales); // recalcular por si acaso
+      dibujarHistograma(datosActuales, stats2, params, modelo);
+
+      // ============================================================
+      // GUARDAR ESTADO DEL MODELO ACTIVO — para el panel de probabilidad C9
+      // Estas variables globales son usadas por calcularProbC9() y
+      // mostrarProbsAutomaticas(), que requieren acceso al modelo y sus
+      // parámetros FUERA del scope de ajustarModelo().
+      // ============================================================
+      modeloActivo  = modelo;
+      paramsActivos = params;
+      statsActivas  = stats2;
+
+      // ---- Calcular μ y σ del MODELO AJUSTADO (no siempre = estadísticos muestrales) ----
+      // Cada modelo tiene una media y varianza teórica propia.
+      // Estos valores se usan para P(μ±σ) y P(X<μ-2σ or X>μ+2σ) en C10.
+      let muModelo, sigmaModelo;
+      switch (modelo) {
+        case 'uniforme':
+          // Uniforme: μ = (a+b)/2, σ = (b-a)/√12
+          muModelo    = (params.a + params.b) / 2;
+          sigmaModelo = (params.b - params.a) / Math.sqrt(12);
+          break;
+        case 'triangular':
+          // Triangular: μ = (a+b+c)/3, σ = √[(a²+b²+c²-ab-ac-bc)/18]
+          muModelo    = (params.a + params.b + params.c) / 3;
+          sigmaModelo = Math.sqrt(
+            (params.a*params.a + params.b*params.b + params.c*params.c
+             - params.a*params.b - params.a*params.c - params.b*params.c) / 18
+          );
+          break;
+        case 'lineal':
+          // Lineal en [a,b]: μ = (a+b)/2 (simétrica alrededor del centro)
+          // σ² = (b-a)²/24 — resultado de integrar x² f(x) para la PDF lineal normalizada
+          muModelo    = (params.a + params.b) / 2;
+          sigmaModelo = (params.b - params.a) / Math.sqrt(24);
+          break;
+        case 'uniforme-partes':
+          // Piecewise: μ = Σ [hᵢ · (aᵢ+bᵢ)/2 · (bᵢ-aᵢ)]
+          // σ² = Σ [hᵢ · (bᵢ-aᵢ) · ((aᵢ²+aᵢbᵢ+bᵢ²)/3)] − μ²
+          muModelo = params.tramos.reduce((s, t) =>
+            s + t.h * (t.a + t.b) / 2 * (t.b - t.a), 0);
+          const e2 = params.tramos.reduce((s, t) =>
+            s + t.h * (t.b - t.a) * (t.a*t.a + t.a*t.b + t.b*t.b) / 3, 0);
+          sigmaModelo = Math.sqrt(Math.max(0, e2 - muModelo * muModelo));
+          break;
+        case 'normal':
+          // Normal: μ y σ son exactamente los parámetros estimados
+          muModelo    = params.mu;
+          sigmaModelo = params.sigma;
+          break;
+        default:
+          // Fallback: usar estadísticos muestrales
+          muModelo    = stats2.media;
+          sigmaModelo = stats2.sigma;
+      }
+
+      // ---- Mostrar panel de probabilidad C9 y calcular automáticos ----
+      document.getElementById('panelProbC9').classList.add('visible');
+      // Limpiar resultado manual anterior
+      document.getElementById('c9-result-box').classList.remove('visible');
+      ocultarErrorProbC9();
+      // Calcular y mostrar P(μ±σ) y tails con μ/σ del modelo ajustado
+      mostrarProbsAutomaticas(muModelo, sigmaModelo);
+    }
+
+    // ---- Evaluar la PDF del modelo ajustado en un punto x ----
+    // Enruta al motor de distribuciones ya implementado en Etapa 2.
+    function evaluarPDFModelo(x, tipoModelo, params, stats) {
+      switch (tipoModelo) {
+        case 'uniforme':
+          return pdfUniforme(x, params.a, params.b);
+
+        case 'triangular':
+          return pdfTriangular(x, params.a, params.b, params.c);
+
+        case 'lineal':
+          return pdfLineal(x, params.a, params.b, params.dir);
+
+        case 'uniforme-partes':
+          // Usar pdfPorPartes con los tramos estimados
+          return pdfPorPartes(x, params.tramos);
+
+        case 'normal':
+          return pdfNormal(x, params.mu, params.sigma);
+
+        default:
+          return 0;
+      }
+    }
+
+    // ============================================================
+    // HELPERS — mensajes de error C9
+    // ============================================================
+    function mostrarErrorModelado(mensaje) {
+      const el = document.getElementById('errorModelado');
+      document.getElementById('textoErrorModelado').textContent = mensaje;
+      el.classList.add('visible');
+    }
+
+    function ocultarErrorModelado() {
+      document.getElementById('errorModelado').classList.remove('visible');
+    }
+
+
+    // ============================================================
+    // C3 — AUTOPOBLAR PARÁMETROS EN SIMULACIÓN DESDE CSV
+    // Lee el archivo, extrae la columna numérica, calcula n/min/max/μ/σ
+    // y rellena los inputs de la distribución actualmente seleccionada.
+    // ============================================================
+    function cargarCSVSimulacion(input) {
+      const archivo = input.files[0];
+      if (!archivo) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const texto = e.target.result;
+
+        // Parsear CSV — mismo algoritmo que procesarCSV() en C9
+        const lineas = texto.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+        if (lineas.length < 2) return;
+
+        const sep = lineas[0].includes(';') ? ';' : ',';
+        const encab = lineas[0].split(sep).map(h => h.trim());
+        const primeraFila = lineas[1].split(sep).map(v => v.trim());
+
+        let colNum = -1;
+        for (let i = 0; i < primeraFila.length; i++) {
+          const v = Number(primeraFila[i]);
+          if (!isNaN(v) && isFinite(v)) { colNum = i; break; }
+        }
+        if (colNum === -1) return;
+
+        const valores = [];
+        for (let i = 1; i < lineas.length; i++) {
+          const p = lineas[i].split(sep);
+          if (p.length <= colNum) continue;
+          const v = Number(p[colNum].trim());
+          if (!isNaN(v) && isFinite(v)) valores.push(v);
+        }
+        if (valores.length === 0) return;
+
+        // Calcular estadísticos básicos (σ con n-1)
+        const n     = valores.length;
+        const min   = Math.min(...valores);
+        const max   = Math.max(...valores);
+        const media = valores.reduce((s, v) => s + v, 0) / n;
+        const sigma = Math.sqrt(valores.reduce((s, v) => s + Math.pow(v - media, 2), 0) / (n - 1));
+
+        // Modo = punto medio del bin más frecuente (Sturges)
+        const nBins = Math.ceil(Math.log2(n) + 1);
+        const ancho = (max - min) / nBins;
+        const cnt   = new Array(nBins).fill(0);
+        valores.forEach(v => { let idx = Math.min(Math.floor((v - min) / ancho), nBins - 1); cnt[idx]++; });
+        const idxMax = cnt.indexOf(Math.max(...cnt));
+        const moda   = min + (idxMax + 0.5) * ancho;
+
+        // Rellenar inputs según distribución activa
+        const dist = document.getElementById('selectorDistribucion').value;
+        if (dist === 'uniforme') {
+          document.getElementById('unif-a').value = min.toFixed(2);
+          document.getElementById('unif-b').value = max.toFixed(2);
+        } else if (dist === 'triangular') {
+          document.getElementById('tri-a').value = min.toFixed(2);
+          document.getElementById('tri-b').value = max.toFixed(2);
+          document.getElementById('tri-c').value = moda.toFixed(2);
+        } else if (dist === 'lineal') {
+          document.getElementById('lin-a').value = min.toFixed(2);
+          document.getElementById('lin-b').value = max.toFixed(2);
+        } else if (dist === 'porpartes') {
+          document.getElementById('pp-a1').value = min.toFixed(2);
+          document.getElementById('pp-b3').value = max.toFixed(2);
+        } else if (dist === 'normal') {
+          document.getElementById('norm-mu').value    = media.toFixed(4);
+          document.getElementById('norm-sigma').value = sigma.toFixed(4);
+        }
+
+        // Actualizar etiqueta del botón y notificar
+        document.getElementById('csvSimText').textContent =
+          '✅ ' + archivo.name + ' (' + n + ' obs.)';
+
+        // Si era por partes, recalcular indicador de área
+        if (dist === 'porpartes') actualizarAreaPorPartes();
+        limpiarResultado();
+      };
+      reader.readAsText(archivo);
+    }
+
+    // ============================================================
+    // C2 — ANALIZAR DATOS PEGADOS MANUALMENTE (paste textarea)
+    // Extrae números del textarea, calcula estadísticos y dispara
+    // el mismo flujo que cargarCSV() para mostrar histograma y
+    // habilitar el ajuste de modelos.
+    // ============================================================
+    function procesarDataPegada() {
+      const texto = document.getElementById('pasteDataArea').value;
+      if (!texto.trim()) {
+        mostrarErrorModelado('Paste some numbers in the text area first.');
+        return;
+      }
+
+      // Separar por comas, puntos y coma, saltos de línea o espacios
+      const valores = texto.split(/[\s,;]+/)
+        .map(t => parseFloat(t.trim()))
+        .filter(v => !isNaN(v) && isFinite(v));
+
+      if (valores.length < 3) {
+        mostrarErrorModelado('At least 3 valid numbers are required.');
+        return;
+      }
+
+      // Reutilizar el flujo de procesarCSV() con datos ya extraídos
+      datosActuales = valores;
+      nombreArchivoActual = 'pasted-data';
+
+      const stats = calcularEstadisticas(valores);
+      document.getElementById('stat-n').textContent     = stats.n;
+      document.getElementById('stat-min').textContent   = stats.min.toFixed(2);
+      document.getElementById('stat-max').textContent   = stats.max.toFixed(2);
+      document.getElementById('stat-media').textContent = stats.media.toFixed(4);
+      document.getElementById('stat-sigma').textContent = stats.sigma.toFixed(4);
+      document.getElementById('panelEstadisticas').classList.add('visible');
+
+      document.getElementById('zonaCarga').querySelector('.upload-text').innerHTML =
+        '✅ <strong>Pasted data</strong><br/>' + stats.n + ' observations loaded';
+
+      ocultarErrorModelado();
+      dibujarHistograma(valores, stats);
+
+      document.getElementById('selectorModelo').value = '';
+      document.getElementById('panelParamsEstimados').classList.remove('visible');
+      document.getElementById('bloqueInterpretacion').classList.remove('visible');
+      document.getElementById('panelProbC9').classList.remove('visible');
+      document.getElementById('c9-result-box').classList.remove('visible');
+      ocultarErrorProbC9();
+      ['c9-p1s','c9-p2s','c9-ptails'].forEach(id => {
+        document.getElementById(id).textContent = 'N/A';
+      });
+      modeloActivo  = null;
+      paramsActivos = null;
+      statsActivas  = null;
+    }
+    //
+    // Adicionalmente calcula de forma automática al ajustar cada modelo:
+    //   · P(μ−σ < X < μ+σ)          → requerido en C10
+    //   · P(μ−2σ < X < μ+2σ)
+    //   · P(X < μ−2σ  or  X > μ+2σ) → requerido en C10
+    //
+    // Variables globales del estado del modelo ajustado activo:
+    let modeloActivo  = null;   // string: 'uniforme'|'triangular'|...
+    let paramsActivos = null;   // objeto con parámetros estimados
+    let statsActivas  = null;   // estadísticas del dataset cargado
+    // ============================================================
+
+    // --- Adaptador de distribución: convierte nombres C9→C8 para calcularP() ---
+    // calcularP() usa los nombres del motor C8 ('porpartes', no 'uniforme-partes')
+    function nombreMotor(modeloC9) {
+      return modeloC9 === 'uniforme-partes' ? 'porpartes' : modeloC9;
+    }
+
+    // --- Calcular P usando el motor existente de C8 (calcularP) ---
+    function calcularPModelo(tipo, x1, x2) {
+      if (!modeloActivo || !paramsActivos) return null;
+      return calcularP(tipo, x1, x2, nombreMotor(modeloActivo), paramsActivos);
+    }
+
+    // --- Calcular y mostrar los resultados automáticos ---
+    // Llamada desde ajustarModelo() tras estimar parámetros.
+    // mu y sigma son los del MODELO AJUSTADO (no siempre iguales a los muestrales).
+    function mostrarProbsAutomaticas(mu, sigma) {
+      // P(μ−σ < X < μ+σ)
+      const p1s    = calcularPModelo('entre', mu - sigma,     mu + sigma);
+      // P(μ−2σ < X < μ+2σ)
+      const p2s    = calcularPModelo('entre', mu - 2 * sigma, mu + 2 * sigma);
+      // P(X < μ−2σ  or  X > μ+2σ) = 1 − P(μ−2σ < X < μ+2σ)
+      const ptails = p2s !== null ? 1 - p2s : null;
+
+      const fmt = v => v !== null ? (v * 100).toFixed(2) + '%' : 'N/A';
+      document.getElementById('c9-p1s').textContent    = fmt(p1s);
+      document.getElementById('c9-p2s').textContent    = fmt(p2s);
+      document.getElementById('c9-ptails').textContent = fmt(ptails);
+    }
+
+    // --- Actualizar visibilidad del segundo input según tipo ---
+    function actualizarInputsC9(tipo) {
+      const grupoX2   = document.getElementById('c9-grupo-x2');
+      const labelX1   = document.getElementById('c9-label-x1');
+      const container = document.getElementById('c9-limits-container');
+
+      if (tipo === 'entre') {
+        grupoX2.style.display = 'flex';
+        labelX1.textContent   = 'Value x₁';
+        container.classList.remove('single');
+      } else {
+        grupoX2.style.display = 'none';
+        labelX1.textContent   = 'Value x';
+        container.classList.add('single');
+      }
+      // Limpiar resultado anterior al cambiar tipo
+      document.getElementById('c9-result-box').classList.remove('visible');
+      ocultarErrorProbC9();
+    }
+
+    // --- Calcular probabilidad manual desde el modelo ajustado ---
+    function calcularProbC9() {
+      ocultarErrorProbC9();
+
+      if (!modeloActivo || !paramsActivos) {
+        mostrarErrorProbC9('Select and fit a model first.');
+        return;
+      }
+
+      const tipo = document.getElementById('c9-tipoprob').value;
+      const x1   = parseFloat(document.getElementById('c9-x1').value);
+      const x2   = parseFloat(document.getElementById('c9-x2').value);
+
+      if (isNaN(x1)) {
+        mostrarErrorProbC9('Enter a valid value for x (or x₁).');
+        return;
+      }
+      if (tipo === 'entre' && (isNaN(x2) || x2 <= x1)) {
+        mostrarErrorProbC9('For "between two points", x₂ must be greater than x₁.');
+        return;
+      }
+
+      const prob = calcularPModelo(tipo, x1, x2);
+
+      // Construir expresión legible
+      let expr = '';
+      if (tipo === 'menor') expr = 'P(X < ' + x1.toFixed(3) + ')';
+      if (tipo === 'mayor') expr = 'P(X > ' + x1.toFixed(3) + ')';
+      if (tipo === 'entre') expr = 'P(' + x1.toFixed(3) + ' < X < ' + x2.toFixed(3) + ')';
+
+      document.getElementById('c9-result-expr').textContent = expr + ' =';
+      document.getElementById('c9-result-val').textContent  = prob.toFixed(4);
+      document.getElementById('c9-result-box').classList.add('visible');
+
+      // Redibujar histograma sombreando la región calculada
+      if (statsActivas) {
+        dibujarHistogramaConSombra(datosActuales, statsActivas,
+          paramsActivos, modeloActivo, tipo, x1, x2);
+      }
+    }
+
+    // --- Redibujar histograma con región sombreada (P manual C9) ---
+    function dibujarHistogramaConSombra(datos, stats, params, modelo, tipo, x1, x2) {
+      const canvas = document.getElementById('canvasModelado');
+      const ctx    = canvas.getContext('2d');
+
+      // Dibujar base (histograma + PDF) reutilizando función existente
+      dibujarHistograma(datos, stats, params, modelo);
+
+      // ---- CALCULAR límites del sombreado ----
+      const xCanvasMin = stats.min - ((stats.max - stats.min) / Math.ceil(Math.log2(datos.length) + 1)) * 0.5;
+      const xCanvasMax = stats.max + ((stats.max - stats.min) / Math.ceil(Math.log2(datos.length) + 1)) * 0.5;
+      const xSpan      = xCanvasMax - xCanvasMin;
+
+      // Márgenes idénticos a dibujarHistograma()
+      const W = canvas.width;
+      const H = canvas.height;
+      const mg = { top: 24, right: 24, bottom: 48, left: 56 };
+      const plotW = W - mg.left - mg.right;
+      const plotH = H - mg.top  - mg.bottom;
+
+      // Calcular yMax de la misma forma que en dibujarHistograma
+      const nBins    = Math.ceil(Math.log2(datos.length) + 1);
+      const anchoBin = (stats.max - stats.min) / nBins;
+      const conteos  = new Array(nBins).fill(0);
+      datos.forEach(v => {
+        let idx = Math.floor((v - stats.min) / anchoBin);
+        if (idx >= nBins) idx = nBins - 1;
+        conteos[idx]++;
+      });
+      const densidades = conteos.map(c => (c / datos.length) / anchoBin);
+      let yMax = Math.max(...densidades);
+      const N_PDF = 500;
+      for (let i = 0; i <= N_PDF; i++) {
+        const x   = xCanvasMin + (i / N_PDF) * xSpan;
+        const fxv = evaluarPDFModelo(x, modelo, params, stats);
+        if (fxv > yMax) yMax = fxv;
+      }
+      yMax *= 1.25;
+
+      function xPx(x) { return mg.left + ((x - xCanvasMin) / xSpan) * plotW; }
+      function yPx(y) { return mg.top  + plotH - (y / yMax) * plotH; }
+
+      // ---- Determinar límites del sombreado ----
+      let sX1, sX2;
+      if (tipo === 'menor') { sX1 = xCanvasMin; sX2 = x1; }
+      else if (tipo === 'mayor') { sX1 = x1; sX2 = xCanvasMax; }
+      else { sX1 = x1; sX2 = x2; }
+
+      // Clampar dentro del rango visible
+      sX1 = Math.max(sX1, xCanvasMin);
+      sX2 = Math.min(sX2, xCanvasMax);
+
+      // ---- Dibujar el sombreado sobre la PDF ajustada ----
+      ctx.beginPath();
+      ctx.moveTo(xPx(sX1), yPx(0));
+      const N_SH = 400;
+      for (let i = 0; i <= N_SH; i++) {
+        const x   = sX1 + (i / N_SH) * (sX2 - sX1);
+        const fxv = evaluarPDFModelo(x, modelo, params, stats);
+        ctx.lineTo(xPx(x), yPx(fxv));
+      }
+      ctx.lineTo(xPx(sX2), yPx(0));
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(239,68,68,0.25)';   // rojo semitransparente sobre la PDF roja
+      ctx.fill();
+
+      // Borde del sombreado
+      ctx.beginPath();
+      for (let i = 0; i <= N_SH; i++) {
+        const x   = sX1 + (i / N_SH) * (sX2 - sX1);
+        const fxv = evaluarPDFModelo(x, modelo, params, stats);
+        if (i === 0) ctx.moveTo(xPx(x), yPx(fxv));
+        else         ctx.lineTo(xPx(x), yPx(fxv));
+      }
+      ctx.strokeStyle = 'rgba(239,68,68,0.7)';
+      ctx.lineWidth   = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Líneas verticales en los límites del sombreado
+      [sX1, sX2].forEach((xv, idx) => {
+        if (tipo !== 'menor' && idx === 0 && tipo !== 'entre') return;
+        if (tipo !== 'mayor' && idx === 1 && tipo !== 'entre') return;
+        const px  = xPx(xv);
+        const fxv = evaluarPDFModelo(xv, modelo, params, stats);
+        const pyTop = fxv > 0 ? yPx(Math.min(fxv, yMax)) : mg.top + plotH * 0.15;
+        ctx.beginPath();
+        ctx.moveTo(px, yPx(0));
+        ctx.lineTo(px, pyTop);
+        ctx.strokeStyle = '#EF4444';
+        ctx.lineWidth   = 1.5;
+        ctx.setLineDash([5, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle    = '#EF4444';
+        ctx.font         = 'bold 10px "Plus Jakarta Sans", sans-serif';
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(xv.toFixed(2), px, pyTop - 3);
+      });
+    }
+
+    // --- Helpers de error probabilidad C9 ---
+    function mostrarErrorProbC9(msg) {
+      const el = document.getElementById('errorProbC9');
+      document.getElementById('textoProbC9').textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function ocultarErrorProbC9() {
+      document.getElementById('errorProbC9').style.display = 'none';
+    }
+
+    // ============================================================
+    // TOGGLE PASTE AREA — acordeón para pegar datos manualmente
+    // ============================================================
+    function togglePasteArea() {
+      const wrapper = document.getElementById('pasteAreaWrapper');
+      const btn     = document.getElementById('pasteToggleBtn');
+      const icon    = document.getElementById('pasteToggleIcon');
+      const abierto = wrapper.style.display !== 'none';
+      wrapper.style.display = abierto ? 'none' : 'block';
+      icon.textContent      = abierto ? '▶' : '▼';
+      btn.setAttribute('aria-expanded', String(!abierto));
+    }
+
+    // ============================================================
+    // INIT — inicialización al cargar la página
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', function () {
+      cambiarTab('simulacion');
+      cambiarDistribucion('uniforme');
+      actualizarAreaPorPartes();
+      console.log('[Stage 2+3+4+5+6] Motor de distribuciones + Canvas + CSV + Modelado activos.');
+    });
+
+  </script>
+
+</body>
+</html>
