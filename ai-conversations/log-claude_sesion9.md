@@ -245,19 +245,3 @@ Punto de restauración generado. Resumen de lo que contiene:
 
 Para la próxima sesión: pega el contenido del .md al inicio del chat y adjunta index_V7.html.
 ```
-
----
-
-**`<User>`**
-
-Genera un log completo de esta conversación como archivo MD descargable.
-[... instrucciones completas de formato ...]
-
----
-
-**`<Model>`**
-
-```
-[Se generó el archivo /mnt/user-data/outputs/log-conversacion.md con el log completo de la sesión]
-[Se presenta el archivo para descarga]
-```
