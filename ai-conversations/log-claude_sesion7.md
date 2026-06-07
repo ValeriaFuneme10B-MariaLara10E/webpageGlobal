@@ -362,19 +362,3 @@ instruccion_de_arranque  3 líneas para activar la continuación
 Para usar en una nueva conversación: adjunta punto-restauracion.md + index_V4.html
 al inicio del chat.
 ```
-
----
-
-**`<User>`**
-Genera un log completo de esta conversación como archivo MD descargable.
-[instrucciones completas de formato, estructura y reglas del log]
-
----
-
-**`<Model>`**
-```
-[Se generó el archivo log-conversacion.md con todos los turnos de la conversación]
-[Se copió a /mnt/user-data/outputs/log-conversacion.md]
-
-Archivo generado correctamente. Cubre todos los turnos desde el primer mensaje hasta este.
-```
