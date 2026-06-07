@@ -326,17 +326,3 @@ Para retomar en una nueva conversación: adjunta index_V6.html + punto-restaurac
 y pega el contenido del .md como primer mensaje. El contexto queda reconstituido sin
 necesidad de reexplicar nada.
 ```
-
----
-
-**`<User>`**
-Genera un log completo de esta conversación como archivo MD descargable. [instrucciones completas de formato]
-
----
-
-**`<Model>`**
-```
-[Se generó log-conversacion.md con todos los turnos de la conversación desde el inicio]
-
-Archivo log-conversacion.md generado y disponible para descarga.
-```
