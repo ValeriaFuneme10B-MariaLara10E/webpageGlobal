@@ -317,23 +317,3 @@ Punto de restauración generado. Lo que captura:
 Para retomar en una nueva conversación: pega el contenido del archivo al inicio del chat
 junto con el system prompt de WebStat.
 ```
-
----
-
-**`<User>`**
-
-Genera un log completo de esta conversación como archivo MD descargable.
-[instrucciones completas de formato para log de conversación]
-
----
-
-**`<Model>`**
-
-```
-[Se generó el archivo /home/claude/log-conversacion.md con todos los turnos de la conversación]
-[Se copió a /mnt/user-data/outputs/log-conversacion.md]
-[Se presentó el archivo para descarga]
-
-Archivo generado correctamente. El log cubre todos los turnos desde el primer mensaje
-hasta este, siguiendo el formato solicitado.
-```
